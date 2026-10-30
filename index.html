@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#075E54">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Packing Plan | WhatsApp Report Generator</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            wa: {
+              green: '#25D366',
+              dark: '#128C7E',
+              darker: '#075E54',
+              teal: '#0a3832',
+              light: '#DCF8C6',
+              bg: '#EFEAE2'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS CDN for instant browser-side Excel reading -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Pre-loaded Dump Data (Instant zero-latency lookup) -->
+  <script src="jobs_data.js"></script>
+
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* WhatsApp chat pattern background */
+    .wa-bg-pattern {
+      background-color: #efeae2;
+      background-image: radial-gradient(#d5dbdb 0.85px, transparent 0.85px);
+      background-size: 16px 16px;
+    }
+
+    /* Mobile active touch feedback */
+    .tap-active:active {
+      transform: scale(0.97);
+    }
+
+    /* Safe area for iPhone notch / home bar */
+    .pb-safe {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+
+    /* Hide scrollbar for clean chip row */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-600 selection:text-white">
+
+  <!-- ============================================== -->
+  <!-- TOP APP HEADER (Sleek, Compact & Fixed) -->
+  <!-- ============================================== -->
+  <header class="bg-[#075E54] text-white sticky top-0 z-40 shadow-sm border-b border-emerald-800/40 backdrop-blur-md">
+    <div class="max-w-5xl mx-auto px-3 sm:px-5 h-13 sm:h-14 flex items-center justify-between gap-2">
+      
+      <!-- Brand & Status -->
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-[#25D366] text-white rounded-xl shadow-md flex items-center justify-center font-black shrink-0">
+          <i data-lucide="message-square" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-sm sm:text-base font-extrabold tracking-tight">Packing Plan</h1>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1"></span> LIVE
+            </span>
+          </div>
+          <p class="text-[10px] text-emerald-200/80 hidden sm:block">Dump.xlsx Sync &bull; 1-Click WhatsApp</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        
+        <!-- Live System Sync Button -->
+        <button id="btn-sync-dump" class="tap-active text-xs bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-emerald-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition" title="Computer se live Dump.xlsx sync karein">
+          <i data-lucide="refresh-cw" id="icon-sync" class="w-3.5 h-3.5 text-emerald-950"></i>
+          <span class="text-[11px] sm:text-xs">Sync</span>
+        </button>
+
+        <!-- Dump Count Badge -->
+        <div id="btn-badge-sync" class="text-[11px] sm:text-xs bg-emerald-900/80 border border-emerald-700/60 text-emerald-100 font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer tap-active" title="Jobs count from Dump.xlsx">
+          <span id="dump-count-badge">2,116 Jobs</span>
+        </div>
+
+        <!-- Mobile QR Modal Button -->
+        <button id="btn-show-qr" class="tap-active text-xs bg-emerald-800/90 hover:bg-emerald-700 text-white font-medium px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-600/40 shadow-sm flex items-center gap-1.5 transition" title="Mobile QR Code">
+          <i data-lucide="qr-code" class="w-3.5 h-3.5 text-emerald-300"></i>
+          <span class="hidden sm:inline text-xs">QR Connect</span>
+        </button>
+
+        <!-- Upload New Dump File Button -->
+        <label for="input-upload-dump" class="tap-active text-xs bg-emerald-900/60 hover:bg-emerald-800 text-white font-medium px-2 sm:px-2.5 py-1.5 rounded-xl border border-emerald-700/50 shadow-sm flex items-center gap-1.5 transition cursor-pointer" title="Naya Dump.xlsx upload karein">
+          <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-300"></i>
+          <span class="hidden sm:inline text-xs">Upload</span>
+        </label>
+        <input type="file" id="input-upload-dump" accept=".xlsx, .xls" class="hidden">
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================== -->
+  <!-- MAIN CONTENT CONTAINER (Concise, Clean & Fixed) -->
+  <!-- ============================================== -->
+  <main class="max-w-5xl w-full mx-auto px-3 sm:px-5 py-3 sm:py-5 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 pb-24 lg:pb-8">
+
+    <!-- LEFT COLUMN: SEARCH & BENTO DETAILS (7 Cols on Desktop) -->
+    <div class="lg:col-span-7 space-y-3 sm:space-y-3.5">
+
+      <!-- 1. SEARCH CARD (Hero Element) -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 relative">
+        
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-emerald-600"></i>
+            Search Job Number
+          </label>
+          <span class="text-[10px] text-slate-400">Instant lookup from Dump</span>
+        </div>
+
+        <!-- Input Bar with Clear Button -->
+        <div class="relative flex items-center">
+          <div class="absolute left-3.5 text-emerald-600 pointer-events-none">
+            <i data-lucide="hash" class="w-4 h-4"></i>
+          </div>
+          
+          <input type="text" id="input-job-search" placeholder="Type Job # (e.g. 65250 ya J65250)..." 
+            autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+            class="w-full text-sm sm:text-base font-extrabold text-slate-900 border-2 border-emerald-500/60 rounded-xl pl-10 pr-20 py-2.5 bg-emerald-50/20 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 outline-none transition uppercase shadow-inner">
+          
+          <button id="btn-clear-search" class="absolute right-2 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-xs font-bold rounded-lg transition tap-active flex items-center gap-1">
+            <i data-lucide="x" class="w-3 h-3"></i> Clear
+          </button>
+        </div>
+
+        <!-- Autocomplete Suggestions Dropdown -->
+        <div id="suggestions-box" class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-30 max-h-60 overflow-y-auto hidden divide-y divide-slate-100 backdrop-blur-md">
+          <!-- Populated by JS -->
+        </div>
+
+      </section>
+
+      <!-- 2. COMPACT BENTO GRID (Clean, Fixed & Structured) -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 space-y-2.5">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+            Job Specifications
+          </span>
+          <span id="active-job-indicator" class="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">No Job Selected</span>
+        </div>
+
+        <!-- Bento Grid 2x2 + Full Width -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          
+          <!-- PO Number -->
+          <div class="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/60 flex flex-col justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PO Number</span>
+            <span id="display-po" class="text-xs sm:text-sm font-black text-slate-800 font-mono mt-0.5 truncate select-all">-</span>
+          </div>
+
+          <!-- Quantity (Hero Metric) -->
+          <div class="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200/80 flex flex-col justify-between">
+            <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Order QTY</span>
+            <span id="display-qty" class="text-sm sm:text-base font-black text-emerald-700 font-mono mt-0.5">-</span>
+          </div>
+
+          <!-- Style # -->
+          <div class="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/60 flex flex-col justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Style #</span>
+            <span id="display-style" class="text-xs sm:text-sm font-bold text-slate-800 font-mono mt-0.5 truncate select-all">-</span>
+          </div>
+
+          <!-- Customer / Buyer -->
+          <div class="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/60 flex flex-col justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Buyer</span>
+            <span id="display-customer" class="text-xs sm:text-sm font-bold text-slate-700 mt-0.5 truncate">-</span>
+          </div>
+
+          <!-- Finish Name (Full Width) -->
+          <div class="col-span-2 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/60">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Finish Name</span>
+            <span id="display-finish" class="text-xs sm:text-sm font-black text-slate-900 mt-0.5 block truncate select-all">-</span>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- 3. REMARKS & QUICK CHIPS (Concise & Easy Tap) -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 space-y-2">
+        
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-600"></i>
+            Remarks <span class="text-[10px] font-normal text-slate-400">(Hum khud dalenge)</span>
+          </label>
+          <button id="btn-reset-form" class="text-[10px] font-bold text-slate-400 hover:text-slate-600 tap-active">
+            Reset
+          </button>
+        </div>
+
+        <!-- Remarks Input -->
+        <input type="text" id="input-remarks" placeholder="Type remarks or tap chips below..."
+          class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none transition">
+
+        <!-- Quick Remark Chips (Horizontal Clean Scroll on Mobile) -->
+        <div class="pt-0.5">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            <button type="button" class="quick-remark-btn px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Packing in progress
+            </button>
+            <button type="button" class="quick-remark-btn px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Audit OK / Passed
+            </button>
+            <button type="button" class="quick-remark-btn px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Ready to Ship
+            </button>
+            <button type="button" class="quick-remark-btn px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Waiting Cartons
+            </button>
+            <button type="button" class="quick-remark-btn px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Waiting Stickers
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi-Job Queue Option (Compact) -->
+        <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between">
+          <button id="btn-add-to-multi" class="text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 tap-active transition">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Add to Multi-Job Queue</span>
+          </button>
+          <span class="text-[10px] text-slate-400">Ek waqt me multiple jobs bhejein</span>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- RIGHT COLUMN: WHATSAPP PREVIEW & DESKTOP ACTIONS (5 Cols on Desktop) -->
+    <div class="lg:col-span-5 space-y-3 sm:space-y-3.5 flex flex-col">
+
+      <!-- WHATSAPP PREVIEW CARD -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col flex-1">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
+          <div class="flex items-center gap-1.5">
+            <div class="w-6 h-6 bg-[#25D366] text-white rounded-lg flex items-center justify-center">
+              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            </div>
+            <h2 class="font-extrabold text-slate-800 text-xs sm:text-sm">WhatsApp Preview</h2>
+          </div>
+
+          <!-- Format Mode (Single vs Multi) -->
+          <div class="flex items-center text-[10px] bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <button id="btn-format-single" class="px-2 py-0.5 rounded font-bold text-emerald-800 bg-white shadow-xs transition">Single</button>
+            <button id="btn-format-multi" class="px-2 py-0.5 rounded font-medium text-slate-600 transition">Multi (<span id="multi-count-badge">0</span>)</button>
+          </div>
+        </div>
+
+        <!-- Simulated WhatsApp Chat Box -->
+        <div class="wa-bg-pattern p-2.5 sm:p-3.5 rounded-xl flex-1 flex flex-col border border-slate-200/70 min-h-[220px]">
+          
+          <!-- Message Bubble -->
+          <div class="bg-white rounded-xl shadow-sm p-3 text-xs text-slate-800 border border-slate-200/50 max-w-full relative">
+            <div id="whatsapp-message-preview" class="whitespace-pre-wrap font-mono text-[11px] sm:text-xs leading-relaxed select-all">
+<!-- Formatted message goes here -->
+            </div>
+            <div class="text-[9px] text-slate-400 text-right flex items-center justify-end gap-1 pt-1.5 mt-1 border-t border-slate-100">
+              <span id="preview-time">08:00 pm</span>
+              <i data-lucide="check-check" class="w-3 h-3 text-sky-500"></i>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Desktop Action Buttons -->
+        <div class="mt-3 space-y-2 hidden lg:block">
+          <button id="btn-copy-whatsapp" class="w-full py-3 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white text-xs font-black rounded-xl shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2 tap-active">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span id="btn-copy-text">COPY WHATSAPP REPORT</span>
+          </button>
+
+          <button id="btn-open-wa" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 tap-active">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            <span>Share Directly to WhatsApp</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- MULTI-JOB QUEUE (Collapsible Card) -->
+      <section id="multi-job-queue-card" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 hidden">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2 text-xs">
+          <span class="font-bold text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i>
+            Queued Jobs (<span id="queue-count">0</span>)
+          </span>
+          <button id="btn-clear-queue" class="text-rose-600 hover:text-rose-700 text-[10px] font-bold tap-active">Clear All</button>
+        </div>
+        <div id="queue-items-list" class="space-y-1.5 max-h-36 overflow-y-auto text-xs">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ============================================== -->
+  <!-- MOBILE STICKY BOTTOM ACTION BAR (Thumb Friendly) -->
+  <!-- ============================================== -->
+  <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-2 pb-safe z-30 shadow-2xl">
+    <div class="max-w-md mx-auto grid grid-cols-2 gap-2">
+      
+      <!-- Big Copy Button -->
+      <button id="btn-copy-whatsapp-mobile" class="py-3 bg-[#25D366] active:bg-[#1da850] text-white text-xs sm:text-sm font-black rounded-xl shadow-md flex items-center justify-center gap-1.5 tap-active">
+        <i data-lucide="copy" class="w-4 h-4"></i>
+        <span id="btn-copy-text-mobile">Copy Report</span>
+      </button>
+
+      <!-- Direct Share WhatsApp Button -->
+      <button id="btn-open-wa-mobile" class="py-3 bg-[#075E54] active:bg-[#064e46] text-white text-xs sm:text-sm font-black rounded-xl shadow-md flex items-center justify-center gap-1.5 tap-active">
+        <i data-lucide="share-2" class="w-4 h-4"></i>
+        <span>Share to WA</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: MOBILE CONNECT & QR CODE -->
+  <!-- ============================================== -->
+  <div id="modal-qr" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full p-4 space-y-3 text-center">
+      
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+          <i data-lucide="smartphone" class="w-4 h-4 text-emerald-600"></i>
+          Connect from Mobile Phone
+        </h3>
+        <button id="modal-qr-close" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg tap-active">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Network / IP Switcher Pills -->
+      <div id="network-options-container" class="flex flex-wrap gap-1.5 justify-center">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- QR Code Image -->
+      <div class="flex justify-center py-1">
+        <div class="p-2 bg-white border-2 border-emerald-500/50 rounded-2xl shadow-sm inline-block">
+          <img id="qr-image" src="" alt="Mobile QR Code" class="w-44 h-44 object-contain">
+        </div>
+      </div>
+
+      <!-- Mobile URL Display & Copy -->
+      <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between gap-2 text-left">
+        <div class="overflow-hidden">
+          <span class="text-[9px] font-bold text-slate-400 block uppercase">Wi-Fi Direct Link:</span>
+          <span id="mobile-url-display" class="font-mono font-bold text-xs text-emerald-800 truncate block">http://192.168.68.32:7890</span>
+        </div>
+        <button id="btn-copy-mobile-url" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 tap-active shrink-0">
+          Copy
+        </button>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200/80 p-2 rounded-xl text-left text-[11px] text-amber-900 space-y-0.5">
+        <div class="font-bold flex items-center gap-1 text-amber-800 text-[10px]">
+          <i data-lucide="shield-alert" class="w-3 h-3 text-amber-600"></i>
+          Notice:
+        </div>
+        <p class="text-[10px] text-amber-800/90 leading-tight">
+          Mobile aur PC ka same Wi-Fi hona zaroori hai. Agar link na khule to <strong>ALLOW_MOBILE_FIREWALL.bat</strong> par double-click karein.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 sm:top-auto sm:bottom-6 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 transform -translate-y-16 sm:translate-y-16 opacity-0 transition-all duration-200 z-50">
+    <div class="p-1 bg-emerald-500 rounded-full text-white">
+      <i data-lucide="check" class="w-3 h-3"></i>
+    </div>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script src="report_app.js"></script>
+</body>
+</html>
