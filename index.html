@@ -111,6 +111,12 @@
       <!-- Action Buttons -->
       <div class="flex items-center gap-1.5 sm:gap-2">
         
+        <!-- PWA Install Mobile App Button -->
+        <button id="btn-install-app" class="hidden tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow flex items-center gap-1.5 transition" title="Mobile App Install Karein">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-amber-950"></i>
+          <span class="text-[11px] sm:text-xs">Install App</span>
+        </button>
+
         <!-- Live System Sync Button -->
         <button id="btn-sync-dump" class="tap-active text-xs bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-emerald-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition" title="Computer se live Dump.xlsx sync karein">
           <i data-lucide="refresh-cw" id="icon-sync" class="w-3.5 h-3.5 text-emerald-950"></i>
@@ -138,6 +144,24 @@
       </div>
     </div>
   </header>
+
+  <!-- INSTALL PROMPT BANNER FOR MOBILE -->
+  <div id="pwa-install-banner" class="hidden bg-emerald-950 border-b border-emerald-700/60 text-white px-3 py-2 text-xs shadow-md">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <img src="icon-192.png" alt="App Icon" class="w-6 h-6 rounded-lg shadow-sm border border-emerald-400/30">
+        <span class="text-[11px] font-bold">Mobile App install karein (Fast 1-Tap Access):</span>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="btn-banner-install" class="bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 font-black px-2.5 py-1 rounded-lg text-[11px] shadow tap-active">
+          Install
+        </button>
+        <button id="btn-banner-close" class="text-emerald-300 hover:text-white p-1 tap-active">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============================================== -->
   <!-- MAIN CONTENT CONTAINER (Concise, Clean & Fixed) -->
@@ -503,5 +527,65 @@
   </div>
 
   <script src="report_app.js"></script>
+
+  <!-- PWA Service Worker & Install Handler -->
+  <script>
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('PWA ServiceWorker registered:', reg.scope);
+        }).catch((err) => {
+          console.warn('PWA ServiceWorker registration error:', err);
+        });
+      });
+    }
+
+    // PWA Install Prompt Logic
+    let deferredInstallPrompt = null;
+    const btnInstallApp = document.getElementById('btn-install-app');
+    const pwaBanner = document.getElementById('pwa-install-banner');
+    const btnBannerInstall = document.getElementById('btn-banner-install');
+    const btnBannerClose = document.getElementById('btn-banner-close');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+
+      if (btnInstallApp) btnInstallApp.classList.remove('hidden');
+      if (pwaBanner && !sessionStorage.getItem('pwa_banner_dismissed')) {
+        pwaBanner.classList.remove('hidden');
+      }
+    });
+
+    async function triggerPwaInstall() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          if (btnInstallApp) btnInstallApp.classList.add('hidden');
+          if (pwaBanner) pwaBanner.classList.add('hidden');
+        }
+        deferredInstallPrompt = null;
+      } else {
+        alert('App Install karne ka aasan tareeqa:\n1. Chrome ke upar 3 dots (Menu) dabayein.\n2. "Install App" ya "Add to Home screen" select karein.');
+      }
+    }
+
+    if (btnInstallApp) btnInstallApp.addEventListener('click', triggerPwaInstall);
+    if (btnBannerInstall) btnBannerInstall.addEventListener('click', triggerPwaInstall);
+    if (btnBannerClose && pwaBanner) {
+      btnBannerClose.addEventListener('click', () => {
+        pwaBanner.classList.add('hidden');
+        sessionStorage.setItem('pwa_banner_dismissed', 'true');
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      if (btnInstallApp) btnInstallApp.classList.add('hidden');
+      if (pwaBanner) pwaBanner.classList.add('hidden');
+      deferredInstallPrompt = null;
+    });
+  </script>
 </body>
 </html>
