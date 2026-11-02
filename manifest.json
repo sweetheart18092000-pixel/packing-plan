@@ -1,0 +1,25 @@
+{
+  "name": "Closed Packing Lists Update",
+  "short_name": "Packing Plan",
+  "description": "WhatsApp Job-Wise Packing Report Generator",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#075E54",
+  "theme_color": "#075E54",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
