@@ -164,36 +164,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Format Report Text ---
+    let bulkGeneratedText = '';
+
     function generateReportText() {
+        if (reportMode === 'bulk' && bulkGeneratedText) {
+            return bulkGeneratedText;
+        }
+
         if (reportMode === 'multi') {
             if (multiQueue.length === 0) {
-                return `*📦 PACKING PLAN REPORT*\n` +
+                return `*📦 CLOSED PACKING LISTS UPDATE*\n` +
                        `-------------------------------------\n` +
                        `⚠️ _Koi jobs queue me add nahi kiye gaye._\n` +
                        `_Job search karein aur 'Add to Multi-Job Queue' dabayein._\n` +
-                       `-------------------------------------\n` +
-                       `_Packing System_`;
+                       `-------------------------------------`;
             }
 
-            let text = `*📦 PACKING PLAN REPORT (${multiQueue.length} JOBS)*\n`;
+            let text = `*📦 CLOSED PACKING LISTS UPDATE (${multiQueue.length} JOBS)*\n`;
             text += `-------------------------------------\n`;
+            let totalQty = 0;
             multiQueue.forEach((item, idx) => {
+                const q = item.qty ? Number(item.qty) : 0;
+                totalQty += q;
                 text += `*#${idx + 1}. Job:* ${item.job}\n`;
                 text += `   *PO:* ${item.po || '---'}\n`;
                 text += `   *Style:* ${item.style || '---'}\n`;
                 text += `   *Finish Name:* ${item.finish || '---'}\n`;
-                text += `   *QTY:* ${item.qty ? Number(item.qty).toLocaleString() : '---'}\n`;
+                text += `   *QTY:* ${q ? q.toLocaleString() : '---'}\n`;
                 if (item.customer) text += `   *Buyer:* ${item.customer}\n`;
                 text += `   *Remarks:* ${item.remarks || '---'}\n`;
                 text += `-------------------------------------\n`;
             });
-            text += `_Generated via Packing Plan System_`;
+            text += `*Total Jobs:* ${multiQueue.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
             return text;
         }
 
         // Single Mode
         if (!currentJob) {
-            return `*📦 PACKING UPDATE REPORT*\n` +
+            return `*📦 CLOSED PACKING LISTS UPDATE*\n` +
                    `-------------------------------------\n` +
                    `*Job:* ---\n` +
                    `*Po:* ---\n` +
@@ -208,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const remarksText = inputRemarks.value.trim() || 'Hum khud dalenge';
         const formattedQty = currentJob.qty ? Number(currentJob.qty).toLocaleString() : '---';
 
-        return `*📦 PACKING UPDATE REPORT*\n` +
+        return `*📦 CLOSED PACKING LISTS UPDATE*\n` +
                `-------------------------------------\n` +
                `*Job:* ${currentJob.job}\n` +
                `*Po:* ${currentJob.po || '---'}\n` +
@@ -216,8 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                `*Finish Name:* ${currentJob.finish || '---'}\n` +
                `*QTY:* ${formattedQty}\n` +
                `*REMARKS:* ${remarksText}\n` +
-               `-------------------------------------\n` +
-               `_Generated via Packing Plan System_`;
+               `-------------------------------------`;
     }
 
     // --- Update WhatsApp Bubble Preview ---
@@ -376,6 +383,174 @@ document.addEventListener('DOMContentLoaded', () => {
             if (navigator.vibrate) navigator.vibrate(15);
         });
     });
+
+    // --- Mode Switcher (Single vs Bulk Tab) ---
+    const tabBtnSingle = document.getElementById('tab-btn-single');
+    const tabBtnBulk = document.getElementById('tab-btn-bulk');
+    const sectionSingleMode = document.getElementById('section-single-mode');
+    const sectionBulkMode = document.getElementById('section-bulk-mode');
+
+    // Bulk Elements
+    const inputBulkJobs = document.getElementById('input-bulk-jobs');
+    const inputBulkRemarks = document.getElementById('input-bulk-remarks');
+    const btnGenerateBulk = document.getElementById('btn-generate-bulk');
+    const btnClearBulkText = document.getElementById('btn-clear-bulk-text');
+    const bulkStatusBox = document.getElementById('bulk-status-box');
+    const bulkRemarkChips = document.querySelectorAll('.bulk-remark-chip');
+
+    if (tabBtnSingle && tabBtnBulk && sectionSingleMode && sectionBulkMode) {
+        tabBtnSingle.addEventListener('click', () => {
+            tabBtnSingle.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active';
+            tabBtnBulk.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
+            sectionSingleMode.classList.remove('hidden');
+            sectionBulkMode.classList.add('hidden');
+            reportMode = 'single';
+            updatePreview();
+        });
+
+        tabBtnBulk.addEventListener('click', () => {
+            tabBtnBulk.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active';
+            tabBtnSingle.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
+            sectionBulkMode.classList.remove('hidden');
+            sectionSingleMode.classList.add('hidden');
+            if (bulkGeneratedText) {
+                reportMode = 'bulk';
+                updatePreview();
+            }
+        });
+    }
+
+    // Bulk Quick Chips
+    bulkRemarkChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const current = inputBulkRemarks.value.trim();
+            const val = chip.textContent.trim();
+            inputBulkRemarks.value = current ? `${current}, ${val}` : val;
+            showToast(`Bulk Remark: ${val}`);
+            if (navigator.vibrate) navigator.vibrate(15);
+        });
+    });
+
+    // Clear Bulk Textarea
+    if (btnClearBulkText) {
+        btnClearBulkText.addEventListener('click', () => {
+            if (inputBulkJobs) inputBulkJobs.value = '';
+            if (inputBulkRemarks) inputBulkRemarks.value = '';
+            if (bulkStatusBox) bulkStatusBox.classList.add('hidden');
+            bulkGeneratedText = '';
+            if (reportMode === 'bulk') {
+                reportMode = 'single';
+                updatePreview();
+            }
+            showToast('Bulk inputs cleared!');
+        });
+    }
+
+    // Generate Combined Message from Bulk Input
+    if (btnGenerateBulk) {
+        btnGenerateBulk.addEventListener('click', () => {
+            const rawInput = inputBulkJobs ? inputBulkJobs.value.trim() : '';
+            if (!rawInput) {
+                showToast('⚠️ Pehle jobs numbers list enter karein!', false);
+                if (inputBulkJobs) inputBulkJobs.focus();
+                return;
+            }
+
+            // Split by newlines, commas, semicolons, tabs, spaces
+            const tokens = rawInput
+                .split(/[\r\n,;\t ]+/)
+                .map(t => t.trim().toUpperCase())
+                .filter(t => t.length > 0);
+
+            if (tokens.length === 0) {
+                showToast('⚠️ Koi valid job number nahi mila!', false);
+                return;
+            }
+
+            // Remove duplicate tokens while preserving order
+            const uniqueTokens = [...new Set(tokens)];
+
+            const matchedJobs = [];
+            const notFoundTokens = [];
+
+            uniqueTokens.forEach(tok => {
+                const cleanTok = tok.replace(/^J/i, '');
+                const found = jobsDataset.find(item => {
+                    const j = String(item.job || '').toUpperCase();
+                    const cleanJ = j.replace(/^J/i, '');
+                    return j === tok || cleanJ === cleanTok;
+                });
+
+                if (found) {
+                    matchedJobs.push(found);
+                } else {
+                    notFoundTokens.push(tok);
+                }
+            });
+
+            if (matchedJobs.length === 0) {
+                showToast(`❌ Enter kiye gaye ${tokens.length} jobs me se koi bhi Dump me nahi mila!`, false);
+                if (bulkStatusBox) {
+                    bulkStatusBox.className = 'p-2.5 rounded-xl text-xs space-y-1 bg-rose-50 border border-rose-200 text-rose-800';
+                    bulkStatusBox.innerHTML = `<strong>❌ No Jobs Found:</strong> Check karein ke job numbers theek hain.`;
+                    bulkStatusBox.classList.remove('hidden');
+                }
+                return;
+            }
+
+            // Build Combined Message
+            const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Packed & Closed';
+            let combinedMsg = `*📦 CLOSED PACKING LISTS UPDATE (${matchedJobs.length} JOBS)*\n`;
+            combinedMsg += `-------------------------------------\n`;
+            let totalQty = 0;
+
+            matchedJobs.forEach((jobItem, idx) => {
+                const q = jobItem.qty ? Number(jobItem.qty) : 0;
+                totalQty += q;
+                combinedMsg += `*#${idx + 1}. Job:* ${jobItem.job}\n`;
+                combinedMsg += `   *PO:* ${jobItem.po || '---'}\n`;
+                combinedMsg += `   *Style:* ${jobItem.style || '---'}\n`;
+                combinedMsg += `   *Finish Name:* ${jobItem.finish || '---'}\n`;
+                combinedMsg += `   *QTY:* ${q ? q.toLocaleString() : '0'}\n`;
+                if (jobItem.customer) combinedMsg += `   *Buyer:* ${jobItem.customer}\n`;
+                combinedMsg += `   *Remarks:* ${commonRemarks}\n`;
+                combinedMsg += `-------------------------------------\n`;
+            });
+
+            combinedMsg += `*Total Jobs:* ${matchedJobs.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
+
+            bulkGeneratedText = combinedMsg;
+            reportMode = 'bulk';
+            updatePreview();
+
+            // Status feedback
+            if (bulkStatusBox) {
+                bulkStatusBox.className = 'p-2.5 rounded-xl text-xs space-y-1 bg-emerald-50 border border-emerald-200 text-emerald-900';
+                let statusHtml = `
+                    <div class="flex items-center justify-between font-bold">
+                        <span>✅ ${matchedJobs.length} Jobs Matched!</span>
+                        <span>Total QTY: ${totalQty.toLocaleString()} pcs</span>
+                    </div>
+                `;
+                if (notFoundTokens.length > 0) {
+                    statusHtml += `<div class="text-[10px] text-amber-700 font-semibold pt-1 border-t border-emerald-200/60">
+                        ⚠️ Not Found in Dump (${notFoundTokens.length}): ${notFoundTokens.join(', ')}
+                    </div>`;
+                }
+                bulkStatusBox.innerHTML = statusHtml;
+                bulkStatusBox.classList.remove('hidden');
+            }
+
+            showToast(`✅ ${matchedJobs.length} Jobs ka Single WhatsApp Message ban gaya!`);
+            if (navigator.vibrate) navigator.vibrate([20, 40]);
+
+            // Scroll to preview if on mobile
+            if (window.innerWidth < 1024) {
+                const previewCard = document.getElementById('whatsapp-message-preview');
+                if (previewCard) previewCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    }
 
     // Reset Form
     if (btnResetForm) {
