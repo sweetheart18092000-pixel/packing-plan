@@ -1018,23 +1018,30 @@ document.addEventListener('DOMContentLoaded', () => {
             renderNetworkOptions();
         });
 
+    // --- Modal Show & Hide Utilities (Bulletproof Mobile & Desktop Touch) ---
+    function showModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
     if (btnShowQr && modalQr) {
-        btnShowQr.addEventListener('click', () => {
-            modalQr.classList.remove('hidden');
-        });
+        btnShowQr.addEventListener('click', () => showModal(modalQr));
     }
 
     if (modalQrClose && modalQr) {
-        modalQrClose.addEventListener('click', () => {
-            modalQr.classList.add('hidden');
-        });
+        modalQrClose.addEventListener('click', () => hideModal(modalQr));
     }
 
     if (modalQr) {
         modalQr.addEventListener('click', (e) => {
-            if (e.target === modalQr) {
-                modalQr.classList.add('hidden');
-            }
+            if (e.target === modalQr) hideModal(modalQr);
         });
     }
 
@@ -1383,7 +1390,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const workers = getWorkers();
             const found = workers.find(w => w.name === chosenName) || { name: chosenName, dept: 'Packaging' };
             setActiveUser(found);
-            if (modalUserAuth) modalUserAuth.classList.add('hidden');
+            hideModal(modalUserAuth);
             showToast(`👤 Active Worker set to: ${found.name}`);
         });
     }
@@ -1418,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (inputNewWorkerName) inputNewWorkerName.value = '';
             if (inputNewWorkerDept) inputNewWorkerDept.value = '';
-            if (modalUserAuth) modalUserAuth.classList.add('hidden');
+            hideModal(modalUserAuth);
 
             showToast(`🎉 Naya worker "${name}" add aur active ho gaya!`);
         });
@@ -1440,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (user === 'admin' && pass === 'shoaib65') {
                 setAdminLoggedIn(true);
-                if (modalUserAuth) modalUserAuth.classList.add('hidden');
+                hideModal(modalUserAuth);
                 openAdminDashboard();
                 showToast('👑 Welcome Admin Shoaib!');
             } else {
@@ -1453,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function openAdminDashboard() {
         if (!modalAdminDashboard) return;
         renderAdminDashboard();
-        modalAdminDashboard.classList.remove('hidden');
+        showModal(modalAdminDashboard);
     }
 
     // Admin Dashboard Render Logic
@@ -1619,29 +1626,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnAdminLogout) {
         btnAdminLogout.addEventListener('click', () => {
             setAdminLoggedIn(false);
-            if (modalAdminDashboard) modalAdminDashboard.classList.add('hidden');
+            hideModal(modalAdminDashboard);
             showToast('Admin Logged out');
         });
     }
 
-    // Open User Auth Modal on Nav Button Click
+    // Open User Auth Modal on Nav Button Click (Immediate touch + click)
+    function handleUserAuthClick(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (isAdminLoggedIn()) {
+            openAdminDashboard();
+        } else {
+            updateWorkerSelectDropdown();
+            showModal(modalUserAuth);
+        }
+    }
+
     if (btnUserAuth) {
-        btnUserAuth.addEventListener('click', () => {
-            if (isAdminLoggedIn()) {
-                openAdminDashboard();
-            } else {
-                updateWorkerSelectDropdown();
-                if (modalUserAuth) modalUserAuth.classList.remove('hidden');
-            }
+        let touchTriggered = false;
+        btnUserAuth.addEventListener('touchend', (e) => {
+            touchTriggered = true;
+            handleUserAuthClick(e);
+            setTimeout(() => { touchTriggered = false; }, 350);
+        }, { passive: false });
+
+        btnUserAuth.addEventListener('click', (e) => {
+            if (touchTriggered) return;
+            handleUserAuthClick(e);
         });
     }
 
-    // Modal Close Handlers
+    // Modal Close Handlers & Outside Backdrop Click
     if (modalAuthClose && modalUserAuth) {
-        modalAuthClose.addEventListener('click', () => modalUserAuth.classList.add('hidden'));
+        modalAuthClose.addEventListener('click', () => hideModal(modalUserAuth));
     }
     if (modalAdminClose && modalAdminDashboard) {
-        modalAdminClose.addEventListener('click', () => modalAdminDashboard.classList.add('hidden'));
+        modalAdminClose.addEventListener('click', () => hideModal(modalAdminDashboard));
+    }
+
+    if (modalUserAuth) {
+        modalUserAuth.addEventListener('click', (e) => {
+            if (e.target === modalUserAuth) hideModal(modalUserAuth);
+        });
+    }
+    if (modalAdminDashboard) {
+        modalAdminDashboard.addEventListener('click', (e) => {
+            if (e.target === modalAdminDashboard) hideModal(modalAdminDashboard);
+        });
     }
 
     // Initialize Auth & Dropdown States
