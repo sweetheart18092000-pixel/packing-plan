@@ -276,13 +276,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Case A: Single Style Group (All jobs have same Style/Finish)
         if (groupKeys.length === 1) {
             const g = groups[groupKeys[0]];
-            let msg = `*📦 CLOSED PACKING LISTS UPDATE (${jobs.length} JOBS)*\n`;
-            msg += `-------------------------------------\n`;
-            if (g.customer && g.customer !== '---') msg += `*Buyer:* ${g.customer}\n`;
-            msg += `*Style:* ${g.style}\n`;
-            msg += `*Finish Name:* ${g.finish}\n`;
             const rem = g.remarks || defaultRemarks || 'Locked & Ready For Audit';
-            if (rem) msg += `*Remarks:* ${rem}\n`;
+            let msg = `*📦 CLOSED PACKING LISTS UPDATE (${jobs.length} JOBS)*\n`;
+            msg += `*Finish Name:* ${g.finish}\n`;
+            msg += `*Style:* ${g.style}\n`;
+            if (g.customer && g.customer !== '---') {
+                msg += `*Buyer:* ${g.customer}\n`;
+            }
+            if (rem) {
+                msg += `*Remarks:* ${rem}\n`;
+            }
             msg += `-------------------------------------\n`;
             msg += `*JOBS & PO BREAKDOWN:*\n`;
             g.items.forEach((item, idx) => {
@@ -303,14 +306,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const g = groups[key];
             let subQty = 0;
             g.items.forEach(it => subQty += (Number(it.qty) || 0));
-
-            msg += `*STYLE #${gIdx + 1}:* ${g.style}\n`;
-            let meta = `*Finish:* ${g.finish}`;
-            if (g.customer && g.customer !== '---') meta += ` | *Buyer:* ${g.customer}`;
-            msg += meta + `\n`;
             const rem = g.remarks || defaultRemarks || 'Locked & Ready For Audit';
-            if (rem) msg += `*Remarks:* ${rem}\n`;
 
+            msg += `*GROUP #${gIdx + 1}:*\n`;
+            msg += `*Finish Name:* ${g.finish}\n`;
+            msg += `*Style:* ${g.style}\n`;
+            if (g.customer && g.customer !== '---') {
+                msg += `*Buyer:* ${g.customer}\n`;
+            }
+            if (rem) {
+                msg += `*Remarks:* ${rem}\n`;
+            }
+            msg += `*JOBS & PO BREAKDOWN:*\n`;
             g.items.forEach((item, idx) => {
                 const q = Number(item.qty) || 0;
                 const qStr = q > 0 ? q.toLocaleString() : '---';
