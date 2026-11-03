@@ -121,22 +121,31 @@
       <!-- Action Buttons (Responsive & Touch-Friendly) -->
       <div class="flex items-center gap-1.5 shrink-0">
         
-        <!-- Big Touchable User & Admin Login Button -->
-        <button id="btn-user-auth" type="button" 
-          class="tap-active text-xs bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 font-black px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition cursor-pointer select-none shrink-0" 
+        <!-- Dedicated Admin Portal Button -->
+        <button id="btn-nav-admin" type="button" 
+          class="tap-active text-xs bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 font-black px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition cursor-pointer select-none shrink-0" 
           style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
-          title="Worker Login / Admin Dashboard">
-          <i data-lucide="user" id="icon-user-nav" class="w-3.5 h-3.5 text-amber-950 pointer-events-none"></i>
-          <span id="label-user-nav" class="text-[11px] font-black pointer-events-none">Login / User</span>
+          title="Admin Portal (Shoaib)">
+          <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-950 pointer-events-none"></i>
+          <span id="label-nav-admin" class="text-[11px] font-black pointer-events-none">Admin</span>
+        </button>
+
+        <!-- Dedicated Worker Selection Button -->
+        <button id="btn-nav-worker" type="button" 
+          class="tap-active text-xs bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition cursor-pointer select-none shrink-0" 
+          style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
+          title="Worker Select / Change">
+          <i data-lucide="user" class="w-3.5 h-3.5 text-emerald-200 pointer-events-none"></i>
+          <span id="label-nav-worker" class="text-[11px] font-bold pointer-events-none">Usman</span>
         </button>
 
         <!-- Live System Sync Button -->
         <button id="btn-sync-dump" type="button" 
-          class="tap-active text-xs bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-emerald-950 font-black px-2 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition shrink-0" 
+          class="tap-active text-xs bg-emerald-800/80 hover:bg-emerald-700 active:bg-emerald-900 text-emerald-100 font-bold px-2 py-1.5 rounded-xl border border-emerald-600/40 shadow-sm flex items-center gap-1 transition shrink-0" 
           style="touch-action: manipulation;"
           title="Dump.xlsx Sync">
-          <i data-lucide="refresh-cw" id="icon-sync" class="w-3.5 h-3.5 text-emerald-950 pointer-events-none"></i>
-          <span class="text-[11px]">Sync</span>
+          <i data-lucide="refresh-cw" id="icon-sync" class="w-3.5 h-3.5 text-emerald-300 pointer-events-none"></i>
+          <span class="text-[11px] hidden sm:inline">Sync</span>
         </button>
 
         <!-- Dump Count Badge (Hidden on very narrow mobile) -->
@@ -445,10 +454,11 @@
             <h2 class="font-extrabold text-slate-800 text-xs sm:text-sm">WhatsApp Preview</h2>
           </div>
 
-          <!-- Format Mode (Single vs Multi) -->
+          <!-- Format Mode (Single vs Multi vs Bulk) -->
           <div class="flex items-center text-[10px] bg-slate-100 p-0.5 rounded-lg border border-slate-200">
             <button id="btn-format-single" class="px-2 py-0.5 rounded font-bold text-emerald-800 bg-white shadow-xs transition">Single</button>
             <button id="btn-format-multi" class="px-2 py-0.5 rounded font-medium text-slate-600 transition">Multi (<span id="multi-count-badge">0</span>)</button>
+            <button id="btn-format-bulk" class="px-2 py-0.5 rounded font-medium text-slate-600 transition">Bulk</button>
           </div>
         </div>
 
@@ -575,119 +585,117 @@
   </div>
 
   <!-- ============================================== -->
-  <!-- MODAL: USER & ADMIN LOGIN / PORTAL -->
+  <!-- MODAL 1: ADMIN LOGIN PORTAL (Shoaib) -->
   <!-- ============================================== -->
-  <div id="modal-user-auth" style="display: none;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-4 sm:p-5 space-y-3.5 max-h-[90vh] overflow-y-auto">
+  <div id="modal-admin-login" style="display: none;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full p-4 sm:p-5 space-y-3.5">
       
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black">
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <i data-lucide="crown" class="w-4 h-4"></i>
           </div>
           <div>
-            <h3 class="font-black text-slate-800 text-sm sm:text-base">User & Admin Portal</h3>
-            <p class="text-[10px] text-slate-400">Worker select karein ya Admin Dashboard kholein</p>
+            <h3 class="font-black text-slate-800 text-sm sm:text-base">Admin Portal Login</h3>
+            <p class="text-[10px] text-slate-400">Manager Shoaib</p>
           </div>
         </div>
-        <button id="modal-auth-close" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg tap-active">
+        <button id="modal-admin-login-close" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg tap-active">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <!-- Auth Tabs: Worker vs Admin -->
-      <div class="flex items-center p-1 bg-slate-100 rounded-xl gap-1">
-        <button id="auth-tab-worker" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-xs tap-active">
-          <i data-lucide="user" class="w-3.5 h-3.5 text-emerald-600"></i>
-          <span>Worker / Operator</span>
-        </button>
-        <button id="auth-tab-admin" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active">
-          <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500"></i>
-          <span>Admin (Shoaib)</span>
-        </button>
-      </div>
-
-      <!-- 1. WORKER LOGIN & SELECTION TAB -->
-      <div id="auth-section-worker" class="space-y-3">
-        
-        <!-- Active User Status -->
-        <div class="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between">
-          <div>
-            <span class="text-[9px] font-bold text-emerald-700 block uppercase">Current Active User:</span>
-            <span id="auth-active-user-display" class="font-black text-xs sm:text-sm text-emerald-900 font-mono">Not Selected</span>
-          </div>
-          <button id="btn-logout-user" class="hidden text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-white px-2 py-1 rounded-lg border border-rose-200 tap-active">
-            Logout
-          </button>
-        </div>
-
-        <!-- Select Existing Worker -->
-        <div class="space-y-1.5">
-          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            Worker Name Select Karein
-          </label>
-          <div class="flex items-center gap-1.5">
-            <select id="select-worker-list" class="flex-1 text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none transition font-semibold">
-              <!-- Populated by JS -->
-            </select>
-            <button id="btn-set-active-worker" class="px-3 py-2 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 text-xs font-black rounded-xl shadow-xs shrink-0 tap-active">
-              Select
-            </button>
-          </div>
-        </div>
-
-        <!-- Add New Worker Form (Expandable) -->
-        <div class="border-t border-slate-100 pt-2.5 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-extrabold text-slate-700 flex items-center gap-1">
-              <i data-lucide="user-plus" class="w-3.5 h-3.5 text-emerald-600"></i>
-              Naya Worker Create Karein
-            </span>
-          </div>
-          <div class="grid grid-cols-2 gap-1.5">
-            <input type="text" id="input-new-worker-name" placeholder="Worker Name (e.g. Farhan)" class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none">
-            <input type="text" id="input-new-worker-dept" placeholder="Dept / Line (e.g. Packing 1)" class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none">
-          </div>
-          <button id="btn-create-worker" class="w-full py-2 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 tap-active">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span>Add Worker to System</span>
-          </button>
-        </div>
-
-      </div>
-
-      <!-- 2. ADMIN LOGIN TAB -->
-      <div id="auth-section-admin" class="space-y-3 hidden">
-        <div class="bg-amber-50/70 border border-amber-200 p-2.5 rounded-xl text-xs text-amber-900 space-y-1">
-          <div class="font-extrabold flex items-center gap-1 text-amber-900">
-            <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-600"></i>
-            Super Admin Portal (Shoaib)
-          </div>
-          <p class="text-[10px] text-amber-800/90 leading-tight">
-            Admin login karke aap daily tamam workers ki packing reports dekh aur Excel me download kar sakte hain.
-          </p>
-        </div>
-
-        <div class="space-y-2">
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Username</label>
-            <input type="text" id="input-admin-username" value="admin" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none font-bold">
-          </div>
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Password</label>
-            <input type="password" id="input-admin-password" placeholder="Enter password (shoaib65)" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none font-bold">
-          </div>
-        </div>
-
-        <button id="btn-login-admin" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-amber-950 text-xs font-black rounded-xl shadow-md flex items-center justify-center gap-1.5 tap-active transition">
-          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-          <span>LOGIN AS ADMIN</span>
-        </button>
-
-        <p class="text-[9px] text-center text-slate-400">
-          Default Credentials: User <strong>admin</strong> | Pass <strong>shoaib65</strong>
+      <div class="bg-amber-50/80 border border-amber-200 p-2.5 rounded-xl text-xs text-amber-900 space-y-1">
+        <p class="text-[10px] text-amber-800/90 leading-tight">
+          Admin login karke aap tamam workers ki daily packing reports aur Excel download access kar sakte hain.
         </p>
+      </div>
+
+      <!-- Login Form -->
+      <div class="space-y-2">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Username</label>
+          <input type="text" id="input-admin-username" value="admin" class="w-full text-xs sm:text-sm font-bold border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Password</label>
+          <input type="password" id="input-admin-password" value="shoaib65" placeholder="Enter password (shoaib65)" class="w-full text-xs sm:text-sm font-bold border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none">
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button id="btn-login-admin" type="button" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-amber-950 text-xs sm:text-sm font-black rounded-xl shadow-md flex items-center justify-center gap-1.5 tap-active transition">
+        <i data-lucide="lock" class="w-4 h-4"></i>
+        <span>LOGIN TO DASHBOARD</span>
+      </button>
+
+      <p class="text-[9px] text-center text-slate-400">
+        Credentials: User <strong>admin</strong> | Pass <strong>shoaib65</strong>
+      </p>
+
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL 2: WORKER SELECTION & ADD WORKER -->
+  <!-- ============================================== -->
+  <div id="modal-worker-select" style="display: none;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full p-4 sm:p-5 space-y-3.5 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">
+            <i data-lucide="user-check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-slate-800 text-sm sm:text-base">Select Active Worker</h3>
+            <p class="text-[10px] text-slate-400">Packaging Operator Profile</p>
+          </div>
+        </div>
+        <button id="modal-worker-close" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg tap-active">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Active User Status -->
+      <div class="p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+        <div>
+          <span class="text-[9px] font-bold text-emerald-700 block uppercase">Active Worker:</span>
+          <span id="auth-active-user-display" class="font-black text-xs sm:text-sm text-emerald-950 font-mono">Usman (Packaging Line 1)</span>
+        </div>
+      </div>
+
+      <!-- Select Existing Worker -->
+      <div class="space-y-1.5">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+          Worker Select Karein
+        </label>
+        <div class="flex items-center gap-1.5">
+          <select id="select-worker-list" class="flex-1 text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-slate-50 focus:bg-white font-bold outline-none">
+            <!-- Populated by JS -->
+          </select>
+          <button id="btn-set-active-worker" type="button" class="px-3 py-2 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 text-xs font-black rounded-xl shadow-xs shrink-0 tap-active">
+            Select
+          </button>
+        </div>
+      </div>
+
+      <!-- Add New Worker Form -->
+      <div class="border-t border-slate-100 pt-2.5 space-y-2">
+        <span class="text-[11px] font-black text-slate-700 flex items-center gap-1">
+          <i data-lucide="user-plus" class="w-3.5 h-3.5 text-emerald-600"></i>
+          + Naya Worker Create Karein
+        </span>
+        <div class="grid grid-cols-2 gap-1.5">
+          <input type="text" id="input-new-worker-name" placeholder="Name (e.g. Farhan)" class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none">
+          <input type="text" id="input-new-worker-dept" placeholder="Line / Dept (Line 1)" class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none">
+        </div>
+        <button id="btn-create-worker" type="button" class="w-full py-2 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-xs font-bold rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 tap-active">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>Save & Make Active Worker</span>
+        </button>
       </div>
 
     </div>

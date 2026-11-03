@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Preview & Mode Switchers
     const btnFormatSingle = document.getElementById('btn-format-single');
     const btnFormatMulti = document.getElementById('btn-format-multi');
+    const btnFormatBulk = document.getElementById('btn-format-bulk');
     const multiCountBadge = document.getElementById('multi-count-badge');
     const previewMessageEl = document.getElementById('whatsapp-message-preview');
     const previewTimeEl = document.getElementById('preview-time');
@@ -201,8 +202,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let bulkGeneratedText = '';
 
     function generateReportText() {
-        if (reportMode === 'bulk' && bulkGeneratedText) {
-            return bulkGeneratedText;
+        if (reportMode === 'bulk') {
+            if (bulkGeneratedText) return bulkGeneratedText;
+            const raw = (typeof inputBulkJobs !== 'undefined' && inputBulkJobs) ? inputBulkJobs.value.trim() : '';
+            if (raw && typeof handleBulkCompile === 'function') {
+                handleBulkCompile();
+                if (bulkGeneratedText) return bulkGeneratedText;
+            }
+            return `*📦 CLOSED PACKING LISTS UPDATE (BULK JOBS)*\n` +
+                   `-------------------------------------\n` +
+                   `📝 _Yahan jobs list paste karein (e.g. 65250, 67215)_\n` +
+                   `_Combined WhatsApp message khud ban jayega._\n` +
+                   `-------------------------------------`;
         }
 
         if (reportMode === 'multi') {
@@ -609,27 +620,185 @@ document.addEventListener('DOMContentLoaded', () => {
     const bulkStatusBox = document.getElementById('bulk-status-box');
     const bulkRemarkChips = document.querySelectorAll('.bulk-remark-chip');
 
-    if (tabBtnSingle && tabBtnBulk && sectionSingleMode && sectionBulkMode) {
-        tabBtnSingle.addEventListener('click', () => {
-            tabBtnSingle.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active';
-            tabBtnBulk.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
-            sectionSingleMode.classList.remove('hidden');
-            sectionBulkMode.classList.add('hidden');
-            reportMode = 'single';
-            updatePreview();
-        });
+    // Parse job numbers accurately from any pasted text
+    function parseBulkJobTokens(rawText) {
+        if (!rawText) return [];
+        const linesOrParts = rawText.split(/[\r\n,;|\t]+/).map(s => s.trim()).filter(Boolean);
+        const tokens = [];
 
-        tabBtnBulk.addEventListener('click', () => {
-            tabBtnBulk.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active';
-            tabBtnSingle.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
-            sectionBulkMode.classList.remove('hidden');
-            sectionSingleMode.classList.add('hidden');
-            if (bulkGeneratedText) {
-                reportMode = 'bulk';
-                updatePreview();
+        linesOrParts.forEach(part => {
+            const matches = part.match(/\bJ?\d{3,8}\b/gi) || part.match(/J?\d+/gi);
+            if (matches) {
+                matches.forEach(m => tokens.push(m.trim().toUpperCase()));
             }
         });
+
+        if (tokens.length === 0) {
+            const spaceMatches = rawText.match(/\bJ?\d+\b/gi) || [];
+            spaceMatches.forEach(m => tokens.push(m.trim().toUpperCase()));
+        }
+
+        return [...new Set(tokens)];
     }
+
+    // Format mode pills updater
+    function updateFormatModePills() {
+        if (btnFormatSingle) {
+            if (reportMode === 'single') {
+                btnFormatSingle.classList.add('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
+                btnFormatSingle.classList.remove('text-slate-600');
+            } else {
+                btnFormatSingle.classList.remove('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
+                btnFormatSingle.classList.add('text-slate-600');
+            }
+        }
+        if (btnFormatMulti) {
+            if (reportMode === 'multi') {
+                btnFormatMulti.classList.add('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
+                btnFormatMulti.classList.remove('text-slate-600');
+            } else {
+                btnFormatMulti.classList.remove('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
+                btnFormatMulti.classList.add('text-slate-600');
+            }
+        }
+        if (btnFormatBulk) {
+            if (reportMode === 'bulk') {
+                btnFormatBulk.classList.add('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
+                btnFormatBulk.classList.remove('text-slate-600');
+            } else {
+                btnFormatBulk.classList.remove('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
+                btnFormatBulk.classList.add('text-slate-600');
+            }
+        }
+    }
+
+    // Compile Bulk Jobs into Single Message
+    function handleBulkCompile() {
+        const rawInput = inputBulkJobs ? inputBulkJobs.value.trim() : '';
+        if (!rawInput) {
+            bulkGeneratedText = '';
+            if (bulkStatusBox) bulkStatusBox.classList.add('hidden');
+            updatePreview();
+            return;
+        }
+
+        const tokens = parseBulkJobTokens(rawInput);
+        if (tokens.length === 0) {
+            bulkGeneratedText = '';
+            if (bulkStatusBox) bulkStatusBox.classList.add('hidden');
+            updatePreview();
+            return;
+        }
+
+        const compiledJobs = [];
+        let matchedCount = 0;
+        let manualCount = 0;
+
+        tokens.forEach(tok => {
+            const cleanTok = tok.replace(/^J/i, '');
+            const found = jobsDataset.find(item => {
+                const j = String(item.job || '').toUpperCase();
+                const cleanJ = j.replace(/^J/i, '');
+                return j === tok || cleanJ === cleanTok;
+            });
+
+            if (found) {
+                matchedCount++;
+                compiledJobs.push({
+                    job: found.job || ('J' + cleanTok),
+                    po: found.po || '---',
+                    style: found.style || '---',
+                    finish: found.finish || '---',
+                    qty: found.qty ? Number(found.qty) : 0,
+                    customer: found.customer || '',
+                    fromDump: true
+                });
+            } else {
+                manualCount++;
+                compiledJobs.push({
+                    job: tok.startsWith('J') ? tok : ('J' + tok),
+                    po: '---',
+                    style: '---',
+                    finish: '---',
+                    qty: 0,
+                    customer: '',
+                    fromDump: false
+                });
+            }
+        });
+
+        const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Packed & Closed';
+        let combinedMsg = `*📦 CLOSED PACKING LISTS UPDATE (${compiledJobs.length} JOBS)*\n`;
+        combinedMsg += `-------------------------------------\n`;
+        let totalQty = 0;
+
+        compiledJobs.forEach((jobItem, idx) => {
+            const q = jobItem.qty ? Number(jobItem.qty) : 0;
+            totalQty += q;
+            combinedMsg += `*#${idx + 1}. Job:* ${jobItem.job}\n`;
+            combinedMsg += `   *PO:* ${jobItem.po || '---'}\n`;
+            combinedMsg += `   *Style:* ${jobItem.style || '---'}\n`;
+            combinedMsg += `   *Finish Name:* ${jobItem.finish || '---'}\n`;
+            combinedMsg += `   *QTY:* ${q > 0 ? q.toLocaleString() : '---'}\n`;
+            if (jobItem.customer) combinedMsg += `   *Buyer:* ${jobItem.customer}\n`;
+            combinedMsg += `   *Remarks:* ${commonRemarks}\n`;
+            combinedMsg += `-------------------------------------\n`;
+        });
+
+        combinedMsg += `*Total Jobs:* ${compiledJobs.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
+        bulkGeneratedText = combinedMsg;
+        reportMode = 'bulk';
+        updateFormatModePills();
+        updatePreview();
+
+        if (bulkStatusBox) {
+            bulkStatusBox.className = 'p-2.5 rounded-xl text-xs space-y-1 bg-emerald-50 border border-emerald-200 text-emerald-900';
+            let statusHtml = `
+                <div class="flex items-center justify-between font-bold">
+                    <span>✅ ${compiledJobs.length} Jobs Ready in Combined Msg</span>
+                    <span>Total QTY: ${totalQty.toLocaleString()} pcs</span>
+                </div>
+            `;
+            if (manualCount > 0) {
+                statusHtml += `<div class="text-[10px] text-amber-700 font-semibold pt-1 border-t border-emerald-200/60">
+                    ℹ️ ${matchedCount} jobs Dump me mili hain, ${manualCount} manual add ki gayi hain.
+                </div>`;
+            } else {
+                statusHtml += `<div class="text-[10px] text-emerald-700 font-semibold pt-1 border-t border-emerald-200/60">
+                    ✨ Tamam ${matchedCount} jobs Dump.xlsx ke sath 100% match ho gayi hain!
+                </div>`;
+            }
+            bulkStatusBox.innerHTML = statusHtml;
+            bulkStatusBox.classList.remove('hidden');
+        }
+    }
+
+    function switchToSingleMode() {
+        reportMode = 'single';
+        if (tabBtnSingle) tabBtnSingle.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active';
+        if (tabBtnBulk) tabBtnBulk.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
+        if (sectionSingleMode) sectionSingleMode.classList.remove('hidden');
+        if (sectionBulkMode) sectionBulkMode.classList.add('hidden');
+        updateFormatModePills();
+        updatePreview();
+    }
+
+    function switchToBulkMode() {
+        reportMode = 'bulk';
+        if (tabBtnBulk) tabBtnBulk.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active';
+        if (tabBtnSingle) tabBtnSingle.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
+        if (sectionBulkMode) sectionBulkMode.classList.remove('hidden');
+        if (sectionSingleMode) sectionSingleMode.classList.add('hidden');
+        updateFormatModePills();
+        handleBulkCompile();
+    }
+
+    if (tabBtnSingle) tabBtnSingle.addEventListener('click', switchToSingleMode);
+    if (tabBtnBulk) tabBtnBulk.addEventListener('click', switchToBulkMode);
+
+    // Real-time live auto-compile as user types or pastes
+    if (inputBulkJobs) inputBulkJobs.addEventListener('input', handleBulkCompile);
+    if (inputBulkRemarks) inputBulkRemarks.addEventListener('input', handleBulkCompile);
 
     // Bulk Quick Chips
     bulkRemarkChips.forEach(chip => {
@@ -637,6 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const current = inputBulkRemarks.value.trim();
             const val = chip.textContent.trim();
             inputBulkRemarks.value = current ? `${current}, ${val}` : val;
+            handleBulkCompile();
             showToast(`Bulk Remark: ${val}`);
             if (navigator.vibrate) navigator.vibrate(15);
         });
@@ -649,113 +819,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputBulkRemarks) inputBulkRemarks.value = '';
             if (bulkStatusBox) bulkStatusBox.classList.add('hidden');
             bulkGeneratedText = '';
-            if (reportMode === 'bulk') {
-                reportMode = 'single';
-                updatePreview();
-            }
+            updatePreview();
             showToast('Bulk inputs cleared!');
         });
     }
 
-    // Generate Combined Message from Bulk Input
+    // Generate Button Click
     if (btnGenerateBulk) {
         btnGenerateBulk.addEventListener('click', () => {
+            handleBulkCompile();
             const rawInput = inputBulkJobs ? inputBulkJobs.value.trim() : '';
             if (!rawInput) {
                 showToast('⚠️ Pehle jobs numbers list enter karein!', false);
                 if (inputBulkJobs) inputBulkJobs.focus();
                 return;
             }
-
-            // Split by newlines, commas, semicolons, tabs, spaces
-            const tokens = rawInput
-                .split(/[\r\n,;\t ]+/)
-                .map(t => t.trim().toUpperCase())
-                .filter(t => t.length > 0);
-
-            if (tokens.length === 0) {
-                showToast('⚠️ Koi valid job number nahi mila!', false);
-                return;
-            }
-
-            // Remove duplicate tokens while preserving order
-            const uniqueTokens = [...new Set(tokens)];
-
-            const matchedJobs = [];
-            const notFoundTokens = [];
-
-            uniqueTokens.forEach(tok => {
-                const cleanTok = tok.replace(/^J/i, '');
-                const found = jobsDataset.find(item => {
-                    const j = String(item.job || '').toUpperCase();
-                    const cleanJ = j.replace(/^J/i, '');
-                    return j === tok || cleanJ === cleanTok;
-                });
-
-                if (found) {
-                    matchedJobs.push(found);
-                } else {
-                    notFoundTokens.push(tok);
-                }
-            });
-
-            if (matchedJobs.length === 0) {
-                showToast(`❌ Enter kiye gaye ${tokens.length} jobs me se koi bhi Dump me nahi mila!`, false);
-                if (bulkStatusBox) {
-                    bulkStatusBox.className = 'p-2.5 rounded-xl text-xs space-y-1 bg-rose-50 border border-rose-200 text-rose-800';
-                    bulkStatusBox.innerHTML = `<strong>❌ No Jobs Found:</strong> Check karein ke job numbers theek hain.`;
-                    bulkStatusBox.classList.remove('hidden');
-                }
-                return;
-            }
-
-            // Build Combined Message
-            const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Packed & Closed';
-            let combinedMsg = `*📦 CLOSED PACKING LISTS UPDATE (${matchedJobs.length} JOBS)*\n`;
-            combinedMsg += `-------------------------------------\n`;
-            let totalQty = 0;
-
-            matchedJobs.forEach((jobItem, idx) => {
-                const q = jobItem.qty ? Number(jobItem.qty) : 0;
-                totalQty += q;
-                combinedMsg += `*#${idx + 1}. Job:* ${jobItem.job}\n`;
-                combinedMsg += `   *PO:* ${jobItem.po || '---'}\n`;
-                combinedMsg += `   *Style:* ${jobItem.style || '---'}\n`;
-                combinedMsg += `   *Finish Name:* ${jobItem.finish || '---'}\n`;
-                combinedMsg += `   *QTY:* ${q ? q.toLocaleString() : '0'}\n`;
-                if (jobItem.customer) combinedMsg += `   *Buyer:* ${jobItem.customer}\n`;
-                combinedMsg += `   *Remarks:* ${commonRemarks}\n`;
-                combinedMsg += `-------------------------------------\n`;
-            });
-
-            combinedMsg += `*Total Jobs:* ${matchedJobs.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
-
-            bulkGeneratedText = combinedMsg;
-            reportMode = 'bulk';
-            updatePreview();
-
-            // Status feedback
-            if (bulkStatusBox) {
-                bulkStatusBox.className = 'p-2.5 rounded-xl text-xs space-y-1 bg-emerald-50 border border-emerald-200 text-emerald-900';
-                let statusHtml = `
-                    <div class="flex items-center justify-between font-bold">
-                        <span>✅ ${matchedJobs.length} Jobs Matched!</span>
-                        <span>Total QTY: ${totalQty.toLocaleString()} pcs</span>
-                    </div>
-                `;
-                if (notFoundTokens.length > 0) {
-                    statusHtml += `<div class="text-[10px] text-amber-700 font-semibold pt-1 border-t border-emerald-200/60">
-                        ⚠️ Not Found in Dump (${notFoundTokens.length}): ${notFoundTokens.join(', ')}
-                    </div>`;
-                }
-                bulkStatusBox.innerHTML = statusHtml;
-                bulkStatusBox.classList.remove('hidden');
-            }
-
-            showToast(`✅ ${matchedJobs.length} Jobs ka Single WhatsApp Message ban gaya!`);
+            showToast('✅ Combined Message ban gaya!');
             if (navigator.vibrate) navigator.vibrate([20, 40]);
-
-            // Scroll to preview if on mobile
             if (window.innerWidth < 1024) {
                 const previewCard = document.getElementById('whatsapp-message-preview');
                 if (previewCard) previewCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -859,26 +939,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mode Switcher Buttons
+    // Mode Switcher Buttons (Single, Multi, Bulk)
     if (btnFormatSingle) {
         btnFormatSingle.addEventListener('click', () => {
-            reportMode = 'single';
-            btnFormatSingle.classList.add('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
-            btnFormatSingle.classList.remove('text-slate-600');
-            btnFormatMulti.classList.remove('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
-            btnFormatMulti.classList.add('text-slate-600');
-            updatePreview();
+            switchToSingleMode();
         });
     }
 
     if (btnFormatMulti) {
         btnFormatMulti.addEventListener('click', () => {
             reportMode = 'multi';
-            btnFormatMulti.classList.add('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
-            btnFormatMulti.classList.remove('text-slate-600');
-            btnFormatSingle.classList.remove('font-bold', 'text-emerald-800', 'bg-white', 'shadow-xs');
-            btnFormatSingle.classList.add('text-slate-600');
+            updateFormatModePills();
             updatePreview();
+        });
+    }
+
+    if (btnFormatBulk) {
+        btnFormatBulk.addEventListener('click', () => {
+            switchToBulkMode();
         });
     }
 
@@ -1019,14 +1097,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     // --- Modal Show & Hide Utilities (Bulletproof Mobile & Desktop Touch) ---
+    let modalOpenTimestamp = 0;
     function showModal(modalEl) {
         if (!modalEl) return;
+        modalOpenTimestamp = Date.now();
         modalEl.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
 
     function hideModal(modalEl) {
         if (!modalEl) return;
+        if (Date.now() - modalOpenTimestamp < 350) return;
         modalEl.style.display = 'none';
         document.body.style.overflow = '';
     }
@@ -1271,32 +1352,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- DOM Elements for Auth & Admin ---
-    const btnUserAuth = document.getElementById('btn-user-auth');
-    const labelUserNav = document.getElementById('label-user-nav');
-    const iconUserNav = document.getElementById('icon-user-nav');
-    const modalUserAuth = document.getElementById('modal-user-auth');
-    const modalAuthClose = document.getElementById('modal-auth-close');
-    const authTabWorker = document.getElementById('auth-tab-worker');
-    const authTabAdmin = document.getElementById('auth-tab-admin');
-    const authSectionWorker = document.getElementById('auth-section-worker');
-    const authSectionAdmin = document.getElementById('auth-section-admin');
+    // Dedicated Header Nav Buttons
+    const btnNavAdmin = document.getElementById('btn-nav-admin');
+    const labelNavAdmin = document.getElementById('label-nav-admin');
+    const btnNavWorker = document.getElementById('btn-nav-worker');
+    const labelNavWorker = document.getElementById('label-nav-worker');
+
+    // Admin Login Modal Elements
+    const modalAdminLogin = document.getElementById('modal-admin-login');
+    const modalAdminLoginClose = document.getElementById('modal-admin-login-close');
+    const inputAdminUsername = document.getElementById('input-admin-username');
+    const inputAdminPassword = document.getElementById('input-admin-password');
+    const btnLoginAdmin = document.getElementById('btn-login-admin');
+
+    // Worker Selection Modal Elements
+    const modalWorkerSelect = document.getElementById('modal-worker-select');
+    const modalWorkerClose = document.getElementById('modal-worker-close');
     const authActiveUserDisplay = document.getElementById('auth-active-user-display');
-    const btnLogoutUser = document.getElementById('btn-logout-user');
     const selectWorkerList = document.getElementById('select-worker-list');
     const btnSetActiveWorker = document.getElementById('btn-set-active-worker');
     const inputNewWorkerName = document.getElementById('input-new-worker-name');
     const inputNewWorkerDept = document.getElementById('input-new-worker-dept');
     const btnCreateWorker = document.getElementById('btn-create-worker');
 
-    // Admin Elements
-    const inputAdminUsername = document.getElementById('input-admin-username');
-    const inputAdminPassword = document.getElementById('input-admin-password');
-    const btnLoginAdmin = document.getElementById('btn-login-admin');
+    // Admin Dashboard Modal & Controls
     const modalAdminDashboard = document.getElementById('modal-admin-dashboard');
     const modalAdminClose = document.getElementById('modal-admin-close');
     const btnAdminLogout = document.getElementById('btn-admin-logout');
 
-    // Admin Dashboard KPI & Controls
     const kpiTodayJobs = document.getElementById('kpi-today-jobs');
     const kpiTodayQty = document.getElementById('kpi-today-qty');
     const kpiActiveWorkers = document.getElementById('kpi-active-workers');
@@ -1311,28 +1394,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentLogDateFilter = 'today'; // 'today', 'yesterday', 'week', 'all'
 
-    // Update Nav Button State
+    // Update Nav Button State (Admin vs Worker badges)
     function updateNavAuthBadge() {
-        if (!labelUserNav) return;
-        if (isAdminLoggedIn()) {
-            labelUserNav.textContent = 'Admin (Shoaib)';
-            if (btnUserAuth) {
-                btnUserAuth.className = 'tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition';
-            }
-        } else {
-            const user = getActiveUser();
-            if (user && user.name) {
-                labelUserNav.textContent = user.name;
-                if (btnUserAuth) {
-                    btnUserAuth.className = 'tap-active text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition';
+        if (labelNavAdmin) {
+            if (isAdminLoggedIn()) {
+                labelNavAdmin.textContent = 'Admin (Shoaib)';
+                if (btnNavAdmin) {
+                    btnNavAdmin.className = 'tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition cursor-pointer select-none shrink-0 ring-2 ring-amber-300';
                 }
             } else {
-                labelUserNav.textContent = 'Login / User';
-                if (btnUserAuth) {
-                    btnUserAuth.className = 'tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition';
+                labelNavAdmin.textContent = 'Admin';
+                if (btnNavAdmin) {
+                    btnNavAdmin.className = 'tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition cursor-pointer select-none shrink-0';
                 }
             }
         }
+
+        if (labelNavWorker) {
+            const user = getActiveUser();
+            labelNavWorker.textContent = user ? user.name : 'Worker';
+        }
+
         if (window.lucide) lucide.createIcons();
     }
 
@@ -1349,12 +1431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
 
         if (authActiveUserDisplay) {
-            authActiveUserDisplay.textContent = active ? `${active.name} (${active.dept || 'Packaging'})` : 'None Selected';
-        }
-
-        if (btnLogoutUser) {
-            if (active) btnLogoutUser.classList.remove('hidden');
-            else btnLogoutUser.classList.add('hidden');
+            authActiveUserDisplay.textContent = active ? `${active.name} (${active.dept || 'Packaging Line 1'})` : 'None Selected';
         }
 
         // Also update filterLogWorker dropdown in admin dashboard
@@ -1366,40 +1443,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Toggle Auth Tabs
-    if (authTabWorker && authTabAdmin) {
-        authTabWorker.addEventListener('click', () => {
-            authTabWorker.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-xs tap-active';
-            authTabAdmin.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
-            authSectionWorker.classList.remove('hidden');
-            authSectionAdmin.classList.add('hidden');
-        });
-
-        authTabAdmin.addEventListener('click', () => {
-            authTabAdmin.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-xs tap-active';
-            authTabWorker.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
-            authSectionAdmin.classList.remove('hidden');
-            authSectionWorker.classList.add('hidden');
-        });
-    }
-
-    // Worker Selection
+    // Worker Selection Click
     if (btnSetActiveWorker && selectWorkerList) {
         btnSetActiveWorker.addEventListener('click', () => {
             const chosenName = selectWorkerList.value;
             const workers = getWorkers();
-            const found = workers.find(w => w.name === chosenName) || { name: chosenName, dept: 'Packaging' };
+            const found = workers.find(w => w.name === chosenName) || { name: chosenName, dept: 'Packaging Line 1' };
             setActiveUser(found);
-            hideModal(modalUserAuth);
-            showToast(`👤 Active Worker set to: ${found.name}`);
+            updateNavAuthBadge();
+            hideModal(modalWorkerSelect);
+            showToast(`👤 Active Worker: ${found.name}`);
         });
     }
 
-    // Create New Worker
+    // Create New Worker Click
     if (btnCreateWorker) {
         btnCreateWorker.addEventListener('click', () => {
             const name = inputNewWorkerName ? inputNewWorkerName.value.trim() : '';
-            const dept = inputNewWorkerDept ? inputNewWorkerDept.value.trim() : 'Packaging';
+            const dept = inputNewWorkerDept ? inputNewWorkerDept.value.trim() : 'Packaging Line 1';
 
             if (!name) {
                 showToast('⚠️ Worker ka naam likhein!', false);
@@ -1416,7 +1477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newWorker = {
                 id: 'w_' + Date.now(),
                 name: name,
-                dept: dept || 'Packaging'
+                dept: dept || 'Packaging Line 1'
             };
 
             workers.push(newWorker);
@@ -1425,17 +1486,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (inputNewWorkerName) inputNewWorkerName.value = '';
             if (inputNewWorkerDept) inputNewWorkerDept.value = '';
-            hideModal(modalUserAuth);
+            
+            updateWorkerSelectDropdown();
+            updateNavAuthBadge();
+            hideModal(modalWorkerSelect);
 
             showToast(`🎉 Naya worker "${name}" add aur active ho gaya!`);
-        });
-    }
-
-    // Logout Worker
-    if (btnLogoutUser) {
-        btnLogoutUser.addEventListener('click', () => {
-            setActiveUser(null);
-            showToast('Logged out of worker profile');
         });
     }
 
@@ -1447,7 +1503,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (user === 'admin' && pass === 'shoaib65') {
                 setAdminLoggedIn(true);
-                hideModal(modalUserAuth);
+                hideModal(modalAdminLogin);
+                updateNavAuthBadge();
                 openAdminDashboard();
                 showToast('👑 Welcome Admin Shoaib!');
             } else {
@@ -1631,52 +1688,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Open User Auth Modal on Nav Button Click (Immediate touch + click)
-    function handleUserAuthClick(e) {
-        if (e) {
+    // Header Action: Admin Button
+    if (btnNavAdmin) {
+        btnNavAdmin.addEventListener('click', (e) => {
             e.preventDefault();
-            e.stopPropagation();
-        }
-        if (isAdminLoggedIn()) {
-            openAdminDashboard();
-        } else {
-            updateWorkerSelectDropdown();
-            showModal(modalUserAuth);
-        }
-    }
-
-    if (btnUserAuth) {
-        let touchTriggered = false;
-        btnUserAuth.addEventListener('touchend', (e) => {
-            touchTriggered = true;
-            handleUserAuthClick(e);
-            setTimeout(() => { touchTriggered = false; }, 350);
-        }, { passive: false });
-
-        btnUserAuth.addEventListener('click', (e) => {
-            if (touchTriggered) return;
-            handleUserAuthClick(e);
+            if (isAdminLoggedIn()) {
+                openAdminDashboard();
+            } else {
+                showModal(modalAdminLogin);
+            }
         });
     }
 
-    // Modal Close Handlers & Outside Backdrop Click
-    if (modalAuthClose && modalUserAuth) {
-        modalAuthClose.addEventListener('click', () => hideModal(modalUserAuth));
+    // Header Action: Worker Button
+    if (btnNavWorker) {
+        btnNavWorker.addEventListener('click', (e) => {
+            e.preventDefault();
+            updateWorkerSelectDropdown();
+            showModal(modalWorkerSelect);
+        });
+    }
+
+    // Modal Close Buttons
+    if (modalAdminLoginClose && modalAdminLogin) {
+        modalAdminLoginClose.addEventListener('click', () => hideModal(modalAdminLogin));
+    }
+    if (modalWorkerClose && modalWorkerSelect) {
+        modalWorkerClose.addEventListener('click', () => hideModal(modalWorkerSelect));
     }
     if (modalAdminClose && modalAdminDashboard) {
         modalAdminClose.addEventListener('click', () => hideModal(modalAdminDashboard));
     }
 
-    if (modalUserAuth) {
-        modalUserAuth.addEventListener('click', (e) => {
-            if (e.target === modalUserAuth) hideModal(modalUserAuth);
+    // Outside Backdrop Click Dismissal
+    [modalAdminLogin, modalWorkerSelect, modalAdminDashboard, modalQr].forEach(modal => {
+        if (!modal) return;
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                hideModal(modal);
+            }
         });
-    }
-    if (modalAdminDashboard) {
-        modalAdminDashboard.addEventListener('click', (e) => {
-            if (e.target === modalAdminDashboard) hideModal(modalAdminDashboard);
-        });
-    }
+    });
 
     // Initialize Auth & Dropdown States
     updateWorkerSelectDropdown();
