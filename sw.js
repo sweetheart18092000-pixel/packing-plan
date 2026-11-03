@@ -1,9 +1,8 @@
-const CACHE_NAME = 'packing-plan-pwa-v1';
+const CACHE_NAME = 'packing-plan-pwa-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './report_app.js',
-  './jobs_data.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -32,12 +31,21 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network first for API/sync, cache first with background update for static assets
-  if (event.request.url.includes('/api/')) {
-    event.respondWith(fetch(event.request));
+  // Always network-first for jobs_data.js and APIs so Dump updates reflect immediately
+  if (event.request.url.includes('jobs_data.js') || event.request.url.includes('/api/')) {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response && response.status === 200 && event.request.method === 'GET') {
+          const respClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, respClone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
     return;
   }
 
+  // Cache-first with background revalidation for shell assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {

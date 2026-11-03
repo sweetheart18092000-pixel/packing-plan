@@ -9,7 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 
-    // --- State Variables (Local Cache First, then Preloaded Dump) ---
+    // --- State Variables: Prioritize freshest preloaded Dump ---
+    let preloaded = (typeof window.DUMP_JOBS !== 'undefined' && Array.isArray(window.DUMP_JOBS)) 
+        ? window.DUMP_JOBS 
+        : ((typeof window.JOBS_DATA !== 'undefined' && Array.isArray(window.JOBS_DATA)) ? window.JOBS_DATA : []);
+
     let savedJobs = null;
     try {
         const cached = localStorage.getItem('PACKING_PLAN_CACHE');
@@ -18,11 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (e) {}
 
-    let jobsDataset = (savedJobs && Array.isArray(savedJobs) && savedJobs.length > 0)
-        ? savedJobs
-        : ((typeof window.DUMP_JOBS !== 'undefined' && Array.isArray(window.DUMP_JOBS)) 
-            ? window.DUMP_JOBS 
-            : ((typeof window.JOBS_DATA !== 'undefined' && Array.isArray(window.JOBS_DATA)) ? window.JOBS_DATA : []));
+    // Use preloaded by default so git updates reflect immediately, or fallback to savedJobs
+    let jobsDataset = (preloaded && preloaded.length > 0) 
+        ? preloaded 
+        : ((savedJobs && savedJobs.length > 0) ? savedJobs : []);
+
     let currentJob = null;
     let multiQueue = [];
     let reportMode = 'single'; // 'single' or 'multi'
@@ -120,35 +124,65 @@ document.addEventListener('DOMContentLoaded', () => {
     updateClock();
     setInterval(updateClock, 30000);
 
-    // --- Live System Dump Sync ---
+    // --- Live System & Cloud Dump Sync ---
     async function syncSystemDump(showNotice = false) {
         if (iconSync) iconSync.classList.add('animate-spin');
 
+        let synced = false;
+
+        // 1. Try local server API
         try {
             const res = await fetch('/api/sync-dump');
             if (res.ok) {
                 const result = await res.json();
-                if (result && result.jobs && Array.isArray(result.jobs)) {
+                if (result && result.jobs && Array.isArray(result.jobs) && result.jobs.length > 0) {
                     jobsDataset = result.jobs;
-                    window.DUMP_JOBS = result.jobs;
-                    window.JOBS_DATA = result.jobs;
-                    if (dumpCountBadge) {
-                        dumpCountBadge.textContent = `${jobsDataset.length.toLocaleString()} Jobs (Live)`;
-                    }
-                    if (showNotice) {
-                        showToast(`🔄 System Dump Synced (${jobsDataset.length.toLocaleString()} Jobs)!`);
-                    }
+                    synced = true;
                 }
             }
-        } catch (err) {
-            console.warn('Sync API error:', err);
+        } catch (e) {}
+
+        // 2. If API not available (e.g. on GitHub Pages Cloud), fetch fresh jobs_data.js with cache busting
+        if (!synced) {
+            try {
+                const bustUrl = './jobs_data.js?_t=' + Date.now();
+                const res = await fetch(bustUrl, { cache: 'no-store' });
+                if (res.ok) {
+                    const jsText = await res.text();
+                    const jsonMatch = jsText.match(/window\.DUMP_JOBS\s*=\s*(\[.*?\])\s*;/s);
+                    if (jsonMatch && jsonMatch[1]) {
+                        const parsed = JSON.parse(jsonMatch[1]);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            jobsDataset = parsed;
+                            synced = true;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Fallback jobs_data fetch error:', err);
+            }
+        }
+
+        if (synced) {
+            window.DUMP_JOBS = jobsDataset;
+            window.JOBS_DATA = jobsDataset;
+            try {
+                localStorage.setItem('PACKING_PLAN_CACHE', JSON.stringify(jobsDataset));
+            } catch (e) {}
+            if (dumpCountBadge) {
+                dumpCountBadge.textContent = `${jobsDataset.length.toLocaleString()} Jobs`;
+            }
             if (showNotice) {
-                showToast(`ℹ️ Running with ${jobsDataset.length.toLocaleString()} offline jobs.`);
+                showToast(`✅ Dump Synced (${jobsDataset.length.toLocaleString()} Jobs)!`);
             }
-        } finally {
-            if (iconSync) {
-                setTimeout(() => iconSync.classList.remove('animate-spin'), 600);
+        } else {
+            if (showNotice) {
+                showToast(`ℹ️ Running with ${jobsDataset.length.toLocaleString()} jobs.`);
             }
+        }
+
+        if (iconSync) {
+            setTimeout(() => iconSync.classList.remove('animate-spin'), 600);
         }
     }
 
