@@ -295,46 +295,138 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Search Autocomplete Handler ---
+    // --- Search Category Filter State ---
+    let currentSearchFilter = 'all'; // 'all', 'job', 'po', 'style'
+    const searchFilterPills = document.querySelectorAll('.search-filter-pill');
+    const searchInputIcon = document.getElementById('search-input-icon');
+
+    if (searchFilterPills && searchFilterPills.length > 0) {
+        searchFilterPills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                const filter = pill.getAttribute('data-search-filter');
+                currentSearchFilter = filter;
+
+                // Update active pill styling
+                searchFilterPills.forEach(p => {
+                    p.className = 'search-filter-pill px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-1';
+                });
+                pill.className = 'search-filter-pill px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-emerald-600 text-white shadow-xs transition tap-active flex items-center gap-1';
+
+                // Adjust inputmode and placeholder for fast thumb typing
+                if (filter === 'job') {
+                    inputJobSearch.setAttribute('inputmode', 'numeric');
+                    inputJobSearch.placeholder = 'Type Job # (e.g. 67250 / J67250)...';
+                } else if (filter === 'po') {
+                    inputJobSearch.setAttribute('inputmode', 'text');
+                    inputJobSearch.placeholder = 'Type PO # (e.g. PO1234)...';
+                } else if (filter === 'style') {
+                    inputJobSearch.setAttribute('inputmode', 'text');
+                    inputJobSearch.placeholder = 'Type Style # (e.g. ST-401)...';
+                } else {
+                    inputJobSearch.setAttribute('inputmode', 'text');
+                    inputJobSearch.placeholder = 'Type Job # (67250 / J67250), PO #, Style #...';
+                }
+
+                if (window.lucide) lucide.createIcons();
+                inputJobSearch.focus();
+                handleSearchInput();
+            });
+        });
+    }
+
+    // --- Search Autocomplete Handler (Job, PO, Style & Numeric-without-J) ---
     function handleSearchInput() {
-        const query = inputJobSearch.value.trim().toLowerCase();
-        if (!query) {
+        const rawQuery = inputJobSearch.value.trim();
+        if (!rawQuery) {
             suggestionsBox.classList.add('hidden');
             return;
         }
 
-        // Clean prefix 'j' if user enters e.g. "65250"
+        const query = rawQuery.toLowerCase();
+        const isNumeric = /^\d+$/.test(query);
         const cleanDigits = query.replace(/^j/i, '');
 
-        const matches = jobsDataset.filter(item => {
-            const j = String(item.job || '').toLowerCase();
-            const p = String(item.po || '').toLowerCase();
-            const s = String(item.style || '').toLowerCase();
-            const f = String(item.finish || '').toLowerCase();
+        let matches = [];
 
-            return j.includes(query) || (cleanDigits && j.includes(cleanDigits)) || p.includes(query) || s.includes(query) || f.includes(query);
-        }).slice(0, 30);
+        if (currentSearchFilter === 'job') {
+            matches = jobsDataset.filter(item => {
+                const j = String(item.job || '').toLowerCase();
+                const cleanJ = j.replace(/^j/i, '');
+                return j.includes(query) || (cleanDigits && cleanJ.includes(cleanDigits));
+            });
+        } else if (currentSearchFilter === 'po') {
+            matches = jobsDataset.filter(item => {
+                const p = String(item.po || '').toLowerCase();
+                return p.includes(query);
+            });
+        } else if (currentSearchFilter === 'style') {
+            matches = jobsDataset.filter(item => {
+                const s = String(item.style || '').toLowerCase();
+                return s.includes(query);
+            });
+        } else {
+            // 'all' Universal mode
+            if (isNumeric) {
+                // If user types pure numbers (e.g. 67250), prioritize matching Job # first
+                const jobMatches = jobsDataset.filter(item => {
+                    const j = String(item.job || '').toLowerCase();
+                    const cleanJ = j.replace(/^j/i, '');
+                    return j.includes(query) || cleanJ.includes(query);
+                });
+                const otherMatches = jobsDataset.filter(item => {
+                    const p = String(item.po || '').toLowerCase();
+                    const s = String(item.style || '').toLowerCase();
+                    return !jobMatches.includes(item) && (p.includes(query) || s.includes(query));
+                });
+                matches = [...jobMatches, ...otherMatches];
+            } else {
+                matches = jobsDataset.filter(item => {
+                    const j = String(item.job || '').toLowerCase();
+                    const cleanJ = j.replace(/^j/i, '');
+                    const p = String(item.po || '').toLowerCase();
+                    const s = String(item.style || '').toLowerCase();
+                    const f = String(item.finish || '').toLowerCase();
+                    const c = String(item.customer || '').toLowerCase();
 
-        if (matches.length === 0) {
+                    return j.includes(query) || (cleanDigits && cleanJ.includes(cleanDigits)) || p.includes(query) || s.includes(query) || f.includes(query) || c.includes(query);
+                });
+            }
+        }
+
+        const trimmedMatches = matches.slice(0, 35);
+
+        if (trimmedMatches.length === 0) {
             suggestionsBox.innerHTML = `
                 <div class="p-3 text-xs text-slate-500 text-center">
-                    No matching job found for "<strong>${inputJobSearch.value}</strong>".
+                    No matching records found for "<strong>${inputJobSearch.value}</strong>".
                 </div>
             `;
             suggestionsBox.classList.remove('hidden');
             return;
         }
 
-        suggestionsBox.innerHTML = matches.map(item => `
+        // Dropdown Header with result count & active filter
+        let dropdownHtml = `
+            <div class="px-3 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 flex items-center justify-between border-b border-slate-100">
+                <span>Found ${matches.length} matches (${currentSearchFilter.toUpperCase()} Mode)</span>
+                <span class="text-emerald-700 font-normal">Tap any job to load</span>
+            </div>
+        `;
+
+        dropdownHtml += trimmedMatches.map(item => {
+            const isPoMatch = String(item.po || '').toLowerCase().includes(query);
+            const isStyleMatch = String(item.style || '').toLowerCase().includes(query);
+
+            return `
             <div class="suggestion-row p-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer transition flex items-center justify-between text-xs border-b border-slate-100 last:border-b-0 tap-active" data-job="${item.job}">
                 <div class="overflow-hidden pr-2">
                     <div class="flex items-center gap-1.5">
                         <span class="font-extrabold text-slate-900 font-mono text-xs sm:text-sm text-emerald-800">Job #${item.job}</span>
                         ${item.customer ? `<span class="text-[9px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-bold">${item.customer}</span>` : ''}
                     </div>
-                    <div class="text-[10px] text-slate-500 mt-0.5 truncate">
-                        <span><strong>PO:</strong> ${item.po || '-'}</span> &bull; 
-                        <span><strong>Style:</strong> ${item.style || '-'}</span>
+                    <div class="text-[10px] text-slate-500 mt-0.5 truncate flex flex-wrap gap-x-2">
+                        <span class="${isPoMatch ? 'text-emerald-700 font-black bg-emerald-100 px-1 rounded' : ''}"><strong>PO:</strong> ${item.po || '-'}</span>
+                        <span class="${isStyleMatch ? 'text-purple-700 font-black bg-purple-100 px-1 rounded' : ''}"><strong>Style:</strong> ${item.style || '-'}</span>
                     </div>
                 </div>
                 <div class="text-right shrink-0">
@@ -344,8 +436,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="text-[9px] text-slate-400 mt-0.5 truncate max-w-[100px]">${item.finish || ''}</div>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
+        suggestionsBox.innerHTML = dropdownHtml;
         suggestionsBox.classList.remove('hidden');
 
         // Attach Click to Suggestions
@@ -372,7 +466,13 @@ document.addEventListener('DOMContentLoaded', () => {
         inputJobSearch.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = inputJobSearch.value.trim().toLowerCase();
-                const matched = jobsDataset.find(x => String(x.job).toLowerCase() === query || String(x.job).toLowerCase() === 'j' + query);
+                const cleanDigits = query.replace(/^j/i, '');
+                const matched = jobsDataset.find(x => {
+                    const j = String(x.job).toLowerCase();
+                    const p = String(x.po).toLowerCase();
+                    const s = String(x.style).toLowerCase();
+                    return j === query || j === 'j' + cleanDigits || p === query || s === query;
+                });
                 if (matched) {
                     selectJob(matched);
                     inputJobSearch.blur();
@@ -401,6 +501,83 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputRemarks) {
         inputRemarks.addEventListener('input', updatePreview);
     }
+
+    // --- Voice Typing Setup (Web Speech API) ---
+    function setupVoiceTyping(btnId, iconId, inputEl) {
+        const btn = document.getElementById(btnId);
+        const icon = document.getElementById(iconId);
+        if (!btn || !inputEl) return;
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            btn.addEventListener('click', () => {
+                alert('⚠️ Voice typing is supported on Google Chrome, Microsoft Edge, and Android Chrome. Please open the link in Chrome browser.');
+            });
+            return;
+        }
+
+        let recognition = null;
+        let isListening = false;
+
+        try {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            recognition.lang = 'ur-PK'; // Urdu with English words recognition
+
+            recognition.onstart = () => {
+                isListening = true;
+                btn.classList.add('recording-active');
+                inputEl.placeholder = '🎤 Sun raha hoon... Boliye (Listening)';
+                showToast('🎤 Voice Typing Active: Remarks boliye...');
+                if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+            };
+
+            recognition.onresult = (event) => {
+                if (event.results && event.results.length > 0) {
+                    const transcript = event.results[0][0].transcript;
+                    if (transcript) {
+                        const curr = inputEl.value.trim();
+                        inputEl.value = curr ? `${curr} ${transcript}` : transcript;
+                        updatePreview();
+                        showToast(`🎤 Added: "${transcript}"`);
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.warn('Speech recognition error:', event.error);
+                if (event.error !== 'no-speech') {
+                    showToast(`⚠️ Mic Notice: ${event.error}`, false);
+                }
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                btn.classList.remove('recording-active');
+                inputEl.placeholder = 'Type remarks or tap chips below...';
+            };
+
+            btn.addEventListener('click', () => {
+                if (isListening) {
+                    recognition.stop();
+                } else {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        recognition.stop();
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Speech setup error:', e);
+        }
+    }
+
+    // Initialize Voice Typing for Single Remarks & Bulk Remarks
+    setupVoiceTyping('btn-voice-remarks', 'icon-voice-remarks', inputRemarks);
+    setupVoiceTyping('btn-bulk-voice-remarks', 'icon-bulk-voice-remarks', inputBulkRemarks);
 
     // Quick Remarks Chips
     quickRemarkBtns.forEach(btn => {
