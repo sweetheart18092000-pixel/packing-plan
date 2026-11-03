@@ -177,10 +177,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateClock, 30000);
 
     // --- Live System & Cloud Dump Sync ---
-    async function syncSystemDump(showNotice = false) {
+        async function syncSystemDump(showNotice = false) {
         if (iconSync) iconSync.classList.add('animate-spin');
 
         let synced = false;
+        let auditSynced = false;
 
         // 1. Try local server API
         try {
@@ -191,17 +192,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     jobsDataset = result.jobs;
                     synced = true;
                 }
+                if (result && result.audit_data && typeof result.audit_data === 'object') {
+                    window.AUDIT_DATA = result.audit_data;
+                    auditSynced = true;
+                }
             }
         } catch (e) {}
 
-        // 2. If API not available (e.g. on GitHub Pages Cloud), fetch fresh jobs_data.js with cache busting
+        // 2. Fetch fresh jobs_data.js with cache busting
         if (!synced) {
             try {
                 const bustUrl = './jobs_data.js?_t=' + Date.now();
                 const res = await fetch(bustUrl, { cache: 'no-store' });
                 if (res.ok) {
                     const jsText = await res.text();
-                    const jsonMatch = jsText.match(/window\.DUMP_JOBS\s*=\s*(\[.*?\])\s*;/s);
+                    const jsonMatch = jsText.match(/window\.DUMP_JOBS\s*=\s*(\[.*?\].*?);/s);
                     if (jsonMatch && jsonMatch[1]) {
                         const parsed = JSON.parse(jsonMatch[1]);
                         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -215,6 +220,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 3. Fetch fresh audit_data.js with cache busting
+        try {
+            const auditBustUrl = './audit_data.js?_t=' + Date.now();
+            const aRes = await fetch(auditBustUrl, { cache: 'no-store' });
+            if (aRes.ok) {
+                const aText = await aRes.text();
+                const aMatch = aText.match(/window\.AUDIT_DATA\s*=\s*(\{.*?\}.*?);/s);
+                if (aMatch && aMatch[1]) {
+                    window.AUDIT_DATA = JSON.parse(aMatch[1]);
+                    try {
+                        localStorage.setItem('PACKING_AUDIT_DATA', JSON.stringify(window.AUDIT_DATA));
+                    } catch (e) {}
+                    auditSynced = true;
+                }
+            }
+        } catch (err) {
+            console.warn('Fallback audit_data fetch error:', err);
+        }
+
         if (synced) {
             window.DUMP_JOBS = jobsDataset;
             window.JOBS_DATA = jobsDataset;
@@ -224,13 +248,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dumpCountBadge) {
                 dumpCountBadge.textContent = `${jobsDataset.length.toLocaleString()} Jobs`;
             }
-            if (showNotice) {
-                showToast(`✅ Dump Synced (${jobsDataset.length.toLocaleString()} Jobs)!`);
+        }
+
+        // If current job is open, instantly refresh its display and preview with fresh audit status!
+        if (currentJob) {
+            const updated = jobsDataset.find(j => {
+                const jNum = String(j.job || '').toUpperCase();
+                return jNum === String(currentJob.job).toUpperCase();
+            });
+            if (updated) {
+                currentJob = updated;
             }
+            selectJob(currentJob);
+        } else if (reportMode === 'bulk') {
+            handleBulkCompile();
         } else {
-            if (showNotice) {
-                showToast(`ℹ️ Running with ${jobsDataset.length.toLocaleString()} jobs.`);
-            }
+            updatePreview();
+        }
+
+        if (showNotice) {
+            const auditCount = window.AUDIT_DATA ? Math.round(Object.keys(window.AUDIT_DATA).length / 2) : 0;
+            showToast(`✅ Synced ${jobsDataset.length.toLocaleString()} Jobs & ${auditCount} Audit Records!`);
         }
 
         if (iconSync) {
