@@ -276,10 +276,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Auto-sync on page load
+    // Auto-sync on initial page load
     syncSystemDump(false);
 
-    // Bind Sync button clicks
+    // --- Live Auto-Refresh Engine ---
+    // 1. Periodic background polling every 15 seconds for live audit updates
+    setInterval(() => {
+        syncSystemDump(false);
+    }, 15000);
+
+    // 2. Immediate refresh when user switches back to this tab or unlocks mobile screen
+    window.addEventListener('focus', () => syncSystemDump(false));
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            syncSystemDump(false);
+        }
+    });
+
+    // Bind manual Sync button clicks
     if (btnSyncDump) {
         btnSyncDump.addEventListener('click', () => syncSystemDump(true));
     }

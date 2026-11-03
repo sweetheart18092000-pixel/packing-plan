@@ -38,37 +38,44 @@ def parse_nqa_datetime(dt_val):
 def load_nqa_audits():
     if not os.path.exists(NQA_FILE):
         return {}
-    try:
-        import openpyxl
-        wb = openpyxl.load_workbook(NQA_FILE, read_only=True, data_only=True)
-        sheet_name = 'Audit Details' if 'Audit Details' in wb.sheetnames else wb.sheetnames[0]
-        sheet = wb[sheet_name]
-        job_records = {}
-        for row in sheet.iter_rows(min_row=2, values_only=True):
-            if not row or len(row) < 8:
-                continue
-            dt_raw = row[0]
-            job_raw = row[2]
-            status_raw = row[7]
-            job_str = str(job_raw).strip().upper() if job_raw else ''
-            status_str = str(status_raw).strip() if status_raw else ''
-            if not job_str or not status_str or status_str.lower() in ('nan', 'none', '-'):
-                continue
-            dt = parse_nqa_datetime(dt_raw)
-            if job_str not in job_records or dt > job_records[job_str]['dt']:
-                job_records[job_str] = {'status': status_str, 'dt': dt}
-        wb.close()
-        res = {}
-        for j_key, val in job_records.items():
-            st = val['status']
-            res[j_key] = st
-            clean = j_key.replace('J', '')
-            if clean:
-                res[clean] = st
-        return res
-    except Exception as e:
-        log(f"[WARNING] Error reading NQA audits: {e}")
-        return {}
+    
+    # Retry up to 3 times in case WhatsApp Bot is currently writing to the file
+    for attempt in range(1, 4):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(NQA_FILE, read_only=True, data_only=True)
+            sheet_name = 'Audit Details' if 'Audit Details' in wb.sheetnames else wb.sheetnames[0]
+            sheet = wb[sheet_name]
+            job_records = {}
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if not row or len(row) < 8:
+                    continue
+                dt_raw = row[0]
+                job_raw = row[2]
+                status_raw = row[7]
+                job_str = str(job_raw).strip().upper() if job_raw else ''
+                status_str = str(status_raw).strip() if status_raw else ''
+                if not job_str or not status_str or status_str.lower() in ('nan', 'none', '-'):
+                    continue
+                dt = parse_nqa_datetime(dt_raw)
+                if job_str not in job_records or dt > job_records[job_str]['dt']:
+                    job_records[job_str] = {'status': status_str, 'dt': dt}
+            wb.close()
+            res = {}
+            for j_key, val in job_records.items():
+                st = val['status']
+                res[j_key] = st
+                clean = j_key.replace('J', '')
+                if clean:
+                    res[clean] = st
+            return res
+        except Exception as e:
+            if attempt < 3:
+                time.sleep(1.0)
+            else:
+                log(f"[WARNING] Error reading NQA audits after 3 attempts: {e}")
+                return {}
+    return {}
 
 def sync_dump_to_git():
     log("=" * 60)
@@ -76,7 +83,7 @@ def sync_dump_to_git():
     log("=" * 60)
 
     try:
-        time.sleep(1.5)
+        time.sleep(1.0)
         nqa_dict = load_nqa_audits()
         if nqa_dict:
             with open(AUDIT_JS, "w", encoding="utf-8") as f:
@@ -156,8 +163,8 @@ def sync_dump_to_git():
                     pushed = True
                     break
                 else:
-                    log(f"[RETRY] Push failed: {push_res.stderr.strip()}. Retrying in 3 seconds...")
-                    time.sleep(3)
+                    log(f"[RETRY] Push failed: {push_res.stderr.strip()}. Retrying in 2 seconds...")
+                    time.sleep(2)
 
             if not pushed:
                 log("[WARNING] Push fail ho gaya. Internet connection check karein.")
@@ -206,7 +213,7 @@ def watch_loop():
             break
         except Exception as e:
             log(f"Loop error: {e}")
-            time.sleep(5)
+            time.sleep(3)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--once":
