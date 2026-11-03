@@ -1,4 +1,4 @@
-const CACHE_NAME = 'packing-plan-pwa-v10';
+const CACHE_NAME = 'packing-plan-pwa-v11';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -31,8 +31,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Always network-first for jobs_data.js and APIs so Dump updates reflect immediately
-  if (event.request.url.includes('jobs_data.js') || event.request.url.includes('/api/')) {
+  // Always network-first for jobs_data.js, audit_data.js and APIs so updates reflect immediately
+  if (event.request.url.includes('jobs_data.js') || event.request.url.includes('audit_data.js') || event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request).then((response) => {
         if (response && response.status === 200 && event.request.method === 'GET') {

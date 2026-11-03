@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayStyle = document.getElementById('display-style');
     const displayCustomer = document.getElementById('display-customer');
     const displayFinish = document.getElementById('display-finish');
+    const displayAudit = document.getElementById('display-audit');
+    const displayAuditBadge = document.getElementById('display-audit-badge');
+    const displayAuditCard = document.getElementById('display-audit-card');
 
     // Remarks & Controls
     const inputRemarks = document.getElementById('input-remarks');
@@ -249,8 +252,93 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Format Report Text ---
     let bulkGeneratedText = '';
 
+    // --- Audit Status Lookup Engine ---
+    // Priority 1: NQA Final Audit Reports (window.AUDIT_DATA / local cache)
+    // Priority 2: Dump.xlsx OK-AUDIT
+    // Priority 3: Not Audited
+    function getJobAuditStatus(jobOrItem) {
+        if (!jobOrItem) return 'Not Audited';
+
+        let jobNum = '';
+        let itemAudit = '';
+        let embeddedStatus = '';
+
+        if (typeof jobOrItem === 'string') {
+            jobNum = jobOrItem.trim().toUpperCase();
+        } else if (typeof jobOrItem === 'object') {
+            jobNum = String(jobOrItem.job || '').trim().toUpperCase();
+            itemAudit = String(jobOrItem.audit || '').trim();
+            embeddedStatus = String(jobOrItem.audit_status || '').trim();
+        }
+
+        const cleanJob = jobNum.replace(/^J/i, '');
+
+        // 1. Priority 1: Check window.AUDIT_DATA (from NQA_Final_Audit_Reports.xlsx)
+        if (typeof window.AUDIT_DATA === 'object' && window.AUDIT_DATA !== null) {
+            if (window.AUDIT_DATA[jobNum]) return window.AUDIT_DATA[jobNum];
+            if (cleanJob && window.AUDIT_DATA['J' + cleanJob]) return window.AUDIT_DATA['J' + cleanJob];
+            if (cleanJob && window.AUDIT_DATA[cleanJob]) return window.AUDIT_DATA[cleanJob];
+        }
+
+        // 1b. Check localStorage uploaded audit reports cache
+        try {
+            const localAudit = JSON.parse(localStorage.getItem('PACKING_AUDIT_DATA') || '{}');
+            if (localAudit[jobNum]) return localAudit[jobNum];
+            if (cleanJob && localAudit['J' + cleanJob]) return localAudit['J' + cleanJob];
+            if (cleanJob && localAudit[cleanJob]) return localAudit[cleanJob];
+        } catch (e) {}
+
+        // If pre-compiled into jobs_data.js
+        if (embeddedStatus && embeddedStatus !== 'Not Audited' && embeddedStatus.toLowerCase() !== 'nan' && embeddedStatus.toLowerCase() !== 'none') {
+            return embeddedStatus;
+        }
+
+        // 2. Priority 2: Check Dump.xlsx audit column (e.g. OK-AUDIT)
+        if (!itemAudit || itemAudit.toLowerCase() === 'nan' || itemAudit.toLowerCase() === 'null') {
+            const found = jobsDataset.find(j => {
+                const jNum = String(j.job || '').toUpperCase();
+                return jNum === jobNum || jNum.replace(/^J/i, '') === cleanJob;
+            });
+            if (found) {
+                if (found.audit_status && found.audit_status !== 'Not Audited' && found.audit_status.toLowerCase() !== 'nan') {
+                    return found.audit_status;
+                }
+                if (found.audit && found.audit.toLowerCase() !== 'nan') {
+                    itemAudit = String(found.audit).trim();
+                }
+            }
+        }
+
+        if (itemAudit && itemAudit.toLowerCase() !== 'nan' && itemAudit.toLowerCase() !== 'null' && itemAudit !== '-' && itemAudit !== '') {
+            return itemAudit;
+        }
+
+        // 3. Priority 3: Fallback to Not Audited
+        return 'Not Audited';
+    }
+
+    function getAuditBadgeStyle(status) {
+        const s = String(status || '').toLowerCase();
+        if (s.includes('pass') || s.includes('ok')) {
+            return {
+                badgeClass: 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold',
+                icon: 'check-circle'
+            };
+        }
+        if (s.includes('fail') || s.includes('reject') || s.includes('hold')) {
+            return {
+                badgeClass: 'bg-rose-100 text-rose-800 border border-rose-300 font-bold',
+                icon: 'alert-circle'
+            };
+        }
+        return {
+            badgeClass: 'bg-amber-100 text-amber-800 border border-amber-300 font-bold',
+            icon: 'clock'
+        };
+    }
+
     // Smart Format for Multi & Bulk Jobs: Consolidate repeated Style, Finish, Buyer & Remarks
-    function formatSmartJobsReport(jobs, defaultRemarks = '') {
+    function formatSmartJobsReport(jobs, customRemarks = '') {
         if (!jobs || jobs.length === 0) return '';
         let totalQty = 0;
         jobs.forEach(j => totalQty += (Number(j.qty) || 0));
@@ -264,19 +352,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     style: j.style || '---',
                     finish: j.finish || '---',
                     customer: j.customer || '',
-                    remarks: j.remarks || defaultRemarks || 'Locked & Ready For Audit',
                     items: []
                 };
             }
-            groups[key].items.push(j);
+            const st = j.audit_status || getJobAuditStatus(j);
+            groups[key].items.push({
+                ...j,
+                audit_status: st
+            });
         });
 
         const groupKeys = Object.keys(groups);
 
+        // Helper to determine remarks for a style group
+        function getGroupRemarks(groupItems) {
+            const uniqueStatuses = [...new Set(groupItems.map(it => it.audit_status || 'Not Audited'))];
+            let baseStatus = '';
+            if (uniqueStatuses.length === 1) {
+                baseStatus = uniqueStatuses[0];
+            } else {
+                baseStatus = uniqueStatuses.join(' / ');
+            }
+
+            const trimmedCustom = (customRemarks || '').trim();
+            if (trimmedCustom && 
+                trimmedCustom !== 'Locked & Ready For Audit' && 
+                trimmedCustom !== 'Packed & Closed' && 
+                trimmedCustom !== 'Hum khud dalenge' &&
+                trimmedCustom.toLowerCase() !== baseStatus.toLowerCase()) {
+                return `${baseStatus} - ${trimmedCustom}`;
+            }
+            return baseStatus;
+        }
+
         // Case A: Single Style Group (All jobs have same Style/Finish)
         if (groupKeys.length === 1) {
             const g = groups[groupKeys[0]];
-            const rem = g.remarks || defaultRemarks || 'Locked & Ready For Audit';
+            const rem = getGroupRemarks(g.items);
+            const uniqueStatuses = [...new Set(g.items.map(it => it.audit_status))];
+            const isHomogeneous = uniqueStatuses.length === 1;
+
             let msg = `*📦 CLOSED PACKING LISTS UPDATE (${jobs.length} JOBS)*\n`;
             msg += `*Finish Name:* ${g.finish}\n`;
             msg += `*Style:* ${g.style}\n`;
@@ -291,7 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
             g.items.forEach((item, idx) => {
                 const q = Number(item.qty) || 0;
                 const qStr = q > 0 ? q.toLocaleString() : '---';
-                const itemRem = (item.remarks && item.remarks !== rem) ? ` (${item.remarks})` : '';
+                // If jobs in this group have different audit statuses, show each job's status
+                const itemRem = !isHomogeneous ? ` (${item.audit_status})` : '';
                 msg += `${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${itemRem}\n`;
             });
             msg += `-------------------------------------\n`;
@@ -306,7 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const g = groups[key];
             let subQty = 0;
             g.items.forEach(it => subQty += (Number(it.qty) || 0));
-            const rem = g.remarks || defaultRemarks || 'Locked & Ready For Audit';
+            const rem = getGroupRemarks(g.items);
+            const uniqueStatuses = [...new Set(g.items.map(it => it.audit_status))];
+            const isHomogeneous = uniqueStatuses.length === 1;
 
             msg += `*GROUP #${gIdx + 1}:*\n`;
             msg += `*Finish Name:* ${g.finish}\n`;
@@ -321,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
             g.items.forEach((item, idx) => {
                 const q = Number(item.qty) || 0;
                 const qStr = q > 0 ? q.toLocaleString() : '---';
-                const itemRem = (item.remarks && item.remarks !== rem) ? ` (${item.remarks})` : '';
+                const itemRem = !isHomogeneous ? ` (${item.audit_status})` : '';
                 msg += `  ${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${itemRem}\n`;
             });
             if (g.items.length > 1) {
@@ -369,12 +487,22 @@ document.addEventListener('DOMContentLoaded', () => {
                    `*Style:* ---\n` +
                    `*Finish Name:* ---\n` +
                    `*QTY:* ---\n` +
-                   `*REMARKS:* Hum khud dalenge\n` +
+                   `*Remarks:* Not Audited\n` +
                    `-------------------------------------\n` +
                    `_Job number search karein ya type karein._`;
         }
 
-        const remarksText = inputRemarks.value.trim() || 'Hum khud dalenge';
+        const auditStatus = getJobAuditStatus(currentJob);
+        const userEntered = inputRemarks.value.trim();
+        let remarksText = auditStatus;
+
+        if (userEntered && 
+            userEntered !== auditStatus && 
+            userEntered !== 'Locked & Ready For Audit' && 
+            userEntered !== 'Hum khud dalenge') {
+            remarksText = `${auditStatus} - ${userEntered}`;
+        }
+
         const formattedQty = currentJob.qty ? Number(currentJob.qty).toLocaleString() : '---';
 
         return `*📦 CLOSED PACKING LISTS UPDATE*\n` +
@@ -384,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
                `*Style:* ${currentJob.style || '---'}\n` +
                `*Finish Name:* ${currentJob.finish || '---'}\n` +
                `*QTY:* ${formattedQty}\n` +
-               `*REMARKS:* ${remarksText}\n` +
+               `*Remarks:* ${remarksText}\n` +
                `-------------------------------------`;
     }
 
@@ -405,6 +533,21 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCustomer.textContent = jobItem.customer || '---';
         displayFinish.textContent = jobItem.finish || '---';
 
+        // Audit Status Display
+        const auditStatus = getJobAuditStatus(jobItem);
+        if (displayAudit) {
+            displayAudit.textContent = auditStatus;
+        }
+        if (displayAuditBadge) {
+            displayAuditBadge.textContent = auditStatus;
+            const bStyle = getAuditBadgeStyle(auditStatus);
+            displayAuditBadge.className = `text-[10px] font-black px-2.5 py-0.5 rounded-md ${bStyle.badgeClass}`;
+        }
+
+        if (inputRemarks) {
+            inputRemarks.placeholder = `Audit: ${auditStatus} (or type custom remarks...)`;
+        }
+
         if (activeJobIndicator) {
             activeJobIndicator.textContent = `Job #${jobItem.job}`;
             activeJobIndicator.className = 'text-[10px] font-mono font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300 shadow-xs';
@@ -414,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
         suggestionsBox.classList.add('hidden');
 
         updatePreview();
-        showToast(`✅ Job #${jobItem.job} Loaded!`);
+        showToast(`✅ Job #${jobItem.job} Loaded! (${auditStatus})`);
 
         // Mobile UX: brief gentle scroll to preview or remarks
         if (window.innerWidth < 640) {
@@ -798,6 +941,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let matchedCount = 0;
         let manualCount = 0;
 
+        let passCount = 0;
+        let failCount = 0;
+        let dumpOkCount = 0;
+        let notAuditedCount = 0;
+
         tokens.forEach(tok => {
             const cleanTok = tok.replace(/^J/i, '');
             const found = jobsDataset.find(item => {
@@ -805,6 +953,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cleanJ = j.replace(/^J/i, '');
                 return j === tok || cleanJ === cleanTok;
             });
+
+            const auditStatus = getJobAuditStatus(found || tok);
+            const lowerAudit = auditStatus.toLowerCase();
+            if (lowerAudit.includes('fail')) failCount++;
+            else if (lowerAudit.includes('pass')) passCount++;
+            else if (lowerAudit.includes('ok')) dumpOkCount++;
+            else notAuditedCount++;
 
             if (found) {
                 matchedCount++;
@@ -815,6 +970,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     finish: found.finish || '---',
                     qty: found.qty ? Number(found.qty) : 0,
                     customer: found.customer || '',
+                    audit: found.audit || '',
+                    audit_status: auditStatus,
                     fromDump: true
                 });
             } else {
@@ -826,12 +983,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     finish: '---',
                     qty: 0,
                     customer: '',
+                    audit: '',
+                    audit_status: auditStatus,
                     fromDump: false
                 });
             }
         });
 
-        const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Locked & Ready For Audit';
+        const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : '';
         let totalQty = 0;
         compiledJobs.forEach(jobItem => {
             totalQty += (Number(jobItem.qty) || 0);
@@ -844,20 +1003,27 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePreview();
 
         if (bulkStatusBox) {
-            bulkStatusBox.className = 'p-2.5 rounded-xl text-xs space-y-1 bg-emerald-50 border border-emerald-200 text-emerald-900';
+            bulkStatusBox.className = 'p-2.5 rounded-xl text-xs space-y-1.5 bg-emerald-50 border border-emerald-200 text-emerald-900';
+            
+            let auditStatsHtml = [];
+            if (passCount > 0) auditStatsHtml.push(`<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">${passCount} Passed</span>`);
+            if (dumpOkCount > 0) auditStatsHtml.push(`<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">${dumpOkCount} OK-AUDIT</span>`);
+            if (notAuditedCount > 0) auditStatsHtml.push(`<span class="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">${notAuditedCount} Not Audited</span>`);
+            if (failCount > 0) auditStatsHtml.push(`<span class="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-bold">${failCount} Failed</span>`);
+
             let statusHtml = `
                 <div class="flex items-center justify-between font-bold">
                     <span>✅ ${compiledJobs.length} Jobs Ready in Combined Msg</span>
                     <span>Total QTY: ${totalQty.toLocaleString()} pcs</span>
                 </div>
+                <div class="flex items-center gap-1.5 flex-wrap text-[11px] pt-1 border-t border-emerald-200/60">
+                    <span class="font-bold text-slate-600">Audit Status:</span>
+                    ${auditStatsHtml.join(' ')}
+                </div>
             `;
             if (manualCount > 0) {
-                statusHtml += `<div class="text-[10px] text-amber-700 font-semibold pt-1 border-t border-emerald-200/60">
+                statusHtml += `<div class="text-[10px] text-amber-700 font-semibold">
                     ℹ️ ${matchedCount} jobs Dump me mili hain, ${manualCount} manual add ki gayi hain.
-                </div>`;
-            } else {
-                statusHtml += `<div class="text-[10px] text-emerald-700 font-semibold pt-1 border-t border-emerald-200/60">
-                    ✨ Tamam ${matchedCount} jobs Dump.xlsx ke sath 100% match ho gayi hain!
                 </div>`;
             }
             bulkStatusBox.innerHTML = statusHtml;
@@ -945,7 +1111,13 @@ document.addEventListener('DOMContentLoaded', () => {
             displayStyle.textContent = '-';
             displayCustomer.textContent = '-';
             displayFinish.textContent = '-';
+            if (displayAudit) displayAudit.textContent = 'Not Audited';
+            if (displayAuditBadge) {
+                displayAuditBadge.textContent = 'Not Audited';
+                displayAuditBadge.className = 'text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300';
+            }
             inputRemarks.value = '';
+            inputRemarks.placeholder = 'Type remarks or tap chips below...';
             if (activeJobIndicator) {
                 activeJobIndicator.textContent = 'No Job Selected';
                 activeJobIndicator.className = 'text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200';
@@ -964,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const auditStatus = getJobAuditStatus(currentJob);
             const itemToQueue = {
                 job: currentJob.job,
                 po: currentJob.po,
@@ -971,7 +1144,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 finish: currentJob.finish,
                 qty: currentJob.qty,
                 customer: currentJob.customer,
-                remarks: inputRemarks.value.trim() || 'Packing in progress'
+                audit: currentJob.audit || '',
+                audit_status: auditStatus,
+                remarks: inputRemarks.value.trim() || auditStatus
             };
 
             multiQueue.push(itemToQueue);
@@ -988,18 +1163,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (multiQueue.length > 0) {
             multiJobQueueCard.classList.remove('hidden');
-            queueItemsList.innerHTML = multiQueue.map((item, idx) => `
-                <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
-                    <div class="truncate pr-2">
+            queueItemsList.innerHTML = multiQueue.map((item, idx) => {
+                const st = item.audit_status || getJobAuditStatus(item);
+                const bStyle = getAuditBadgeStyle(st);
+                return `
+                <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs gap-2">
+                    <div class="truncate flex-1">
                         <span class="font-bold text-slate-900 font-mono">#${idx + 1} Job ${item.job}</span> &bull; 
                         <span class="text-slate-600">PO: ${item.po || '-'}</span> &bull; 
                         <span class="font-semibold text-emerald-700">${item.qty ? Number(item.qty).toLocaleString() : '0'} pcs</span>
                     </div>
-                    <button class="btn-remove-queue-item text-rose-500 hover:text-rose-700 p-1 font-bold tap-active" data-index="${idx}">
-                        ✕
-                    </button>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="text-[10px] font-black px-2 py-0.5 rounded ${bStyle.badgeClass}">
+                            ${st}
+                        </span>
+                        <button class="btn-remove-queue-item text-rose-500 hover:text-rose-700 p-1 font-bold tap-active" data-index="${idx}">
+                            ✕
+                        </button>
+                    </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             // Bind remove item
             const removeBtns = queueItemsList.querySelectorAll('.btn-remove-queue-item');
@@ -1239,6 +1423,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const data = new Uint8Array(evt.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
+
+                    // Check if uploaded file is NQA Final Audit Reports
+                    if (workbook.SheetNames.includes('Audit Details') || file.name.toLowerCase().includes('audit')) {
+                        const targetSheet = workbook.SheetNames.includes('Audit Details') ? 'Audit Details' : workbook.SheetNames[0];
+                        const ws = workbook.Sheets[targetSheet];
+                        const auditRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+                        if (auditRows && auditRows.length > 0) {
+                            if (!window.AUDIT_DATA) window.AUDIT_DATA = {};
+                            let loadedCount = 0;
+                            auditRows.forEach(r => {
+                                const jVal = String(r['Job'] || r['JOB'] || r['JOB #'] || '').trim().toUpperCase();
+                                const sVal = String(r['Status'] || r['STATUS'] || '').trim();
+                                if (jVal && sVal && sVal.toLowerCase() !== 'nan') {
+                                    window.AUDIT_DATA[jVal] = sVal;
+                                    const clean = jVal.replace(/^J/i, '');
+                                    if (clean) window.AUDIT_DATA[clean] = sVal;
+                                    loadedCount++;
+                                }
+                            });
+                            try {
+                                localStorage.setItem('PACKING_AUDIT_DATA', JSON.stringify(window.AUDIT_DATA));
+                            } catch (e) {}
+
+                            if (currentJob) selectJob(currentJob);
+                            if (reportMode === 'bulk') handleBulkCompile();
+                            else updatePreview();
+
+                            showToast(`🎉 NQA Audit Reports Loaded: ${loadedCount.toLocaleString()} records from ${file.name}!`);
+                            return;
+                        }
+                    }
+
+                    // Otherwise treat as Dump.xlsx
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
@@ -1248,15 +1466,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         rows.forEach(r => {
                             const jobVal = r['JOB #'] || r['JOB'] || r['Job'] || r['job'];
                             if (!jobVal) return;
+                            const jClean = String(jobVal).trim();
+                            const dumpAudit = String(r['AUDIT CONFIRM'] || r['Audit'] || '').trim();
+                            const st = getJobAuditStatus({ job: jClean, audit: dumpAudit });
                             newJobs.push({
-                                job: String(jobVal).trim(),
+                                job: jClean,
                                 po: String(r['PONO'] || r['PO'] || r['po'] || '').trim(),
                                 style: String(r['STYLE #'] || r['STYLE'] || r['style'] || '').trim(),
                                 finish: String(r['FINISH'] || r['Finish Name'] || r['finish'] || '').trim(),
                                 qty: Number(r['QTY'] || r['Qty'] || r['qty'] || 0),
                                 customer: String(r['CUSTOMER'] || r['Customer'] || '').trim(),
                                 status: String(r['STATUS'] || r['Status'] || '').trim(),
-                                audit: String(r['AUDIT CONFIRM'] || r['Audit'] || '').trim()
+                                audit: dumpAudit,
+                                audit_status: st
                             });
                         });
 
@@ -1373,9 +1595,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let loggedCount = 0;
 
         if (reportMode === 'bulk') {
-            // Find matched jobs from bulk
             const rawInput = inputBulkJobs ? inputBulkJobs.value.trim() : '';
-            const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Packed & Closed';
             if (rawInput) {
                 const tokens = [...new Set(rawInput.split(/[\r\n,;\t ]+/).map(t => t.trim().toUpperCase()).filter(t => t.length > 0))];
                 tokens.forEach(tok => {
@@ -1384,6 +1604,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const j = String(item.job || '').toUpperCase();
                         return j === tok || j.replace(/^J/i, '') === cleanTok;
                     });
+                    const auditStatus = getJobAuditStatus(found || tok);
+                    const userRem = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : '';
+                    const finalRemarks = userRem ? `${auditStatus} - ${userRem}` : auditStatus;
+
                     if (found) {
                         logs.unshift({
                             id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
@@ -1397,7 +1621,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             finish: found.finish || '',
                             qty: Number(found.qty || 0),
                             customer: found.customer || '',
-                            remarks: commonRemarks
+                            audit_status: auditStatus,
+                            remarks: finalRemarks
                         });
                         loggedCount++;
                     }
@@ -1405,6 +1630,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else if (reportMode === 'multi' && multiQueue.length > 0) {
             multiQueue.forEach(item => {
+                const auditStatus = item.audit_status || getJobAuditStatus(item);
                 logs.unshift({
                     id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                     timestamp: now.toISOString(),
@@ -1417,12 +1643,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     finish: item.finish || '',
                     qty: Number(item.qty || 0),
                     customer: item.customer || '',
-                    remarks: item.remarks || 'Ready'
+                    audit_status: auditStatus,
+                    remarks: item.remarks || auditStatus
                 });
                 loggedCount++;
             });
         } else if (currentJob) {
-            const remarks = inputRemarks.value.trim() || 'Packed';
+            const auditStatus = getJobAuditStatus(currentJob);
+            const userRem = inputRemarks.value.trim();
+            const finalRemarks = userRem ? `${auditStatus} - ${userRem}` : auditStatus;
+
             logs.unshift({
                 id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                 timestamp: now.toISOString(),
@@ -1435,7 +1665,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 finish: currentJob.finish || '',
                 qty: Number(currentJob.qty || 0),
                 customer: currentJob.customer || '',
-                remarks: remarks
+                audit_status: auditStatus,
+                remarks: finalRemarks
             });
             loggedCount++;
         }
@@ -1699,7 +1930,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${Number(item.qty || 0).toLocaleString()} pcs
                         </td>
                         <td class="p-2.5 text-slate-700 text-[11px]">
-                            <span class="bg-slate-100 px-2 py-0.5 rounded text-[10px] font-semibold">${item.remarks || '-'}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${getAuditBadgeStyle(item.audit_status || item.remarks).badgeClass}">
+                                ${item.audit_status || 'Not Audited'}
+                            </span>
+                            ${item.remarks && item.remarks !== item.audit_status ? `<span class="block text-[10px] text-slate-500 mt-0.5">${item.remarks}</span>` : ''}
                         </td>
                     </tr>
                 `).join('');
@@ -1751,6 +1985,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 "Finish Name": row.finish,
                 "Order QTY": row.qty,
                 "Buyer": row.customer,
+                "Audit Status": row.audit_status || getJobAuditStatus(row.job),
                 "Remarks": row.remarks
             }));
 
