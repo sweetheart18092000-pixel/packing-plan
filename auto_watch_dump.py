@@ -9,7 +9,17 @@ DUMP_FILE = os.path.join(PROJECT_DIR, "Dump.xlsx")
 JOBS_JS = os.path.join(PROJECT_DIR, "jobs_data.js")
 
 def log(msg):
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+    log_line = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
+    if sys.stdout:
+        try:
+            print(log_line, flush=True)
+        except Exception:
+            pass
+    try:
+        with open(os.path.join(PROJECT_DIR, "watcher.log"), "a", encoding="utf-8") as f:
+            f.write(log_line + "\n")
+    except Exception:
+        pass
 
 def sync_dump_to_git():
     log("=" * 60)
