@@ -249,6 +249,84 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Format Report Text ---
     let bulkGeneratedText = '';
 
+    // Smart Format for Multi & Bulk Jobs: Consolidate repeated Style, Finish, Buyer & Remarks
+    function formatSmartJobsReport(jobs, defaultRemarks = '') {
+        if (!jobs || jobs.length === 0) return '';
+        let totalQty = 0;
+        jobs.forEach(j => totalQty += (Number(j.qty) || 0));
+
+        // Group by style + finish
+        const groups = {};
+        jobs.forEach(j => {
+            const key = (j.style || '---') + '___' + (j.finish || '---');
+            if (!groups[key]) {
+                groups[key] = {
+                    style: j.style || '---',
+                    finish: j.finish || '---',
+                    customer: j.customer || '',
+                    remarks: j.remarks || defaultRemarks || 'Locked & Ready For Audit',
+                    items: []
+                };
+            }
+            groups[key].items.push(j);
+        });
+
+        const groupKeys = Object.keys(groups);
+
+        // Case A: Single Style Group (All jobs have same Style/Finish)
+        if (groupKeys.length === 1) {
+            const g = groups[groupKeys[0]];
+            let msg = `*📦 CLOSED PACKING LISTS UPDATE (${jobs.length} JOBS)*\n`;
+            msg += `-------------------------------------\n`;
+            if (g.customer && g.customer !== '---') msg += `*Buyer:* ${g.customer}\n`;
+            msg += `*Style:* ${g.style}\n`;
+            msg += `*Finish Name:* ${g.finish}\n`;
+            const rem = g.remarks || defaultRemarks || 'Locked & Ready For Audit';
+            if (rem) msg += `*Remarks:* ${rem}\n`;
+            msg += `-------------------------------------\n`;
+            msg += `*JOBS & PO BREAKDOWN:*\n`;
+            g.items.forEach((item, idx) => {
+                const q = Number(item.qty) || 0;
+                const qStr = q > 0 ? q.toLocaleString() : '---';
+                const itemRem = (item.remarks && item.remarks !== rem) ? ` (${item.remarks})` : '';
+                msg += `${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${itemRem}\n`;
+            });
+            msg += `-------------------------------------\n`;
+            msg += `*Total Jobs:* ${jobs.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
+            return msg;
+        }
+
+        // Case B: Multiple Style Groups
+        let msg = `*📦 CLOSED PACKING LISTS UPDATE (${jobs.length} JOBS)*\n`;
+        msg += `-------------------------------------\n`;
+        groupKeys.forEach((key, gIdx) => {
+            const g = groups[key];
+            let subQty = 0;
+            g.items.forEach(it => subQty += (Number(it.qty) || 0));
+
+            msg += `*STYLE #${gIdx + 1}:* ${g.style}\n`;
+            let meta = `*Finish:* ${g.finish}`;
+            if (g.customer && g.customer !== '---') meta += ` | *Buyer:* ${g.customer}`;
+            msg += meta + `\n`;
+            const rem = g.remarks || defaultRemarks || 'Locked & Ready For Audit';
+            if (rem) msg += `*Remarks:* ${rem}\n`;
+
+            g.items.forEach((item, idx) => {
+                const q = Number(item.qty) || 0;
+                const qStr = q > 0 ? q.toLocaleString() : '---';
+                const itemRem = (item.remarks && item.remarks !== rem) ? ` (${item.remarks})` : '';
+                msg += `  ${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${itemRem}\n`;
+            });
+            if (g.items.length > 1) {
+                msg += `  _Subtotal: ${subQty.toLocaleString()} pcs_\n`;
+            }
+            msg += `-------------------------------------\n`;
+        });
+
+        msg += `*Total Jobs:* ${jobs.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
+        return msg;
+    }
+
     function generateReportText() {
         if (reportMode === 'bulk') {
             if (bulkGeneratedText) return bulkGeneratedText;
@@ -272,24 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                        `_Job search karein aur 'Add to Multi-Job Queue' dabayein._\n` +
                        `-------------------------------------`;
             }
-
-            let text = `*📦 CLOSED PACKING LISTS UPDATE (${multiQueue.length} JOBS)*\n`;
-            text += `-------------------------------------\n`;
-            let totalQty = 0;
-            multiQueue.forEach((item, idx) => {
-                const q = item.qty ? Number(item.qty) : 0;
-                totalQty += q;
-                text += `*#${idx + 1}. Job:* ${item.job}\n`;
-                text += `   *PO:* ${item.po || '---'}\n`;
-                text += `   *Style:* ${item.style || '---'}\n`;
-                text += `   *Finish Name:* ${item.finish || '---'}\n`;
-                text += `   *QTY:* ${q ? q.toLocaleString() : '---'}\n`;
-                if (item.customer) text += `   *Buyer:* ${item.customer}\n`;
-                text += `   *Remarks:* ${item.remarks || '---'}\n`;
-                text += `-------------------------------------\n`;
-            });
-            text += `*Total Jobs:* ${multiQueue.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
-            return text;
+            return formatSmartJobsReport(multiQueue, inputRemarks.value.trim() || 'Locked & Ready For Audit');
         }
 
         // Single Mode
@@ -763,25 +824,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Packed & Closed';
-        let combinedMsg = `*📦 CLOSED PACKING LISTS UPDATE (${compiledJobs.length} JOBS)*\n`;
-        combinedMsg += `-------------------------------------\n`;
+        const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Locked & Ready For Audit';
         let totalQty = 0;
-
-        compiledJobs.forEach((jobItem, idx) => {
-            const q = jobItem.qty ? Number(jobItem.qty) : 0;
-            totalQty += q;
-            combinedMsg += `*#${idx + 1}. Job:* ${jobItem.job}\n`;
-            combinedMsg += `   *PO:* ${jobItem.po || '---'}\n`;
-            combinedMsg += `   *Style:* ${jobItem.style || '---'}\n`;
-            combinedMsg += `   *Finish Name:* ${jobItem.finish || '---'}\n`;
-            combinedMsg += `   *QTY:* ${q > 0 ? q.toLocaleString() : '---'}\n`;
-            if (jobItem.customer) combinedMsg += `   *Buyer:* ${jobItem.customer}\n`;
-            combinedMsg += `   *Remarks:* ${commonRemarks}\n`;
-            combinedMsg += `-------------------------------------\n`;
+        compiledJobs.forEach(jobItem => {
+            totalQty += (Number(jobItem.qty) || 0);
         });
 
-        combinedMsg += `*Total Jobs:* ${compiledJobs.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
+        const combinedMsg = formatSmartJobsReport(compiledJobs, commonRemarks);
         bulkGeneratedText = combinedMsg;
         reportMode = 'bulk';
         updateFormatModePills();
