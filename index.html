@@ -136,7 +136,7 @@
           style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
           title="Worker Select / Change">
           <i data-lucide="user" class="w-3.5 h-3.5 text-emerald-200 pointer-events-none"></i>
-          <span id="label-nav-worker" class="text-[11px] font-bold pointer-events-none">Usman</span>
+          <span id="label-nav-worker" class="text-[11px] font-bold pointer-events-none">Worker</span>
         </button>
 
         <!-- Live System Sync Button -->
@@ -663,21 +663,29 @@
       <div class="p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
         <div>
           <span class="text-[9px] font-bold text-emerald-700 block uppercase">Active Worker:</span>
-          <span id="auth-active-user-display" class="font-black text-xs sm:text-sm text-emerald-950 font-mono">Usman (Packaging Line 1)</span>
+          <span id="auth-active-user-display" class="font-black text-xs sm:text-sm text-emerald-950 font-mono">Koi Worker Active Nahi Hai</span>
         </div>
       </div>
 
       <!-- Select Existing Worker -->
       <div class="space-y-1.5">
-        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-          Worker Select Karein
-        </label>
+        <div class="flex items-center justify-between">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            Worker Select Karein
+          </label>
+          <button id="btn-delete-all-workers" type="button" class="text-[10px] text-rose-600 hover:text-rose-700 font-bold tap-active cursor-pointer">
+            🗑️ Sb Delete Karein
+          </button>
+        </div>
         <div class="flex items-center gap-1.5">
           <select id="select-worker-list" class="flex-1 text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-slate-50 focus:bg-white font-bold outline-none">
             <!-- Populated by JS -->
           </select>
-          <button id="btn-set-active-worker" type="button" class="px-3 py-2 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 text-xs font-black rounded-xl shadow-xs shrink-0 tap-active">
+          <button id="btn-set-active-worker" type="button" class="px-2.5 py-2 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 text-xs font-black rounded-xl shadow-xs shrink-0 tap-active cursor-pointer">
             Select
+          </button>
+          <button id="btn-delete-worker" type="button" class="px-2.5 py-2 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl shadow-xs shrink-0 tap-active cursor-pointer" title="Selected Worker Delete Karein">
+            Delete
           </button>
         </div>
       </div>

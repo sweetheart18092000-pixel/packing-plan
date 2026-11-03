@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const authActiveUserDisplay = document.getElementById('auth-active-user-display');
     const selectWorkerList = document.getElementById('select-worker-list');
     const btnSetActiveWorker = document.getElementById('btn-set-active-worker');
+    const btnDeleteWorker = document.getElementById('btn-delete-worker');
+    const btnDeleteAllWorkers = document.getElementById('btn-delete-all-workers');
     const inputNewWorkerName = document.getElementById('input-new-worker-name');
     const inputNewWorkerDept = document.getElementById('input-new-worker-dept');
     const btnCreateWorker = document.getElementById('btn-create-worker');
@@ -1225,24 +1227,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Admin: admin / shoaib65 | Multi-worker logging & SheetJS Excel Export
     // =========================================================================
 
-    const DEFAULT_WORKERS = [
-        { id: 'w1', name: 'Usman', dept: 'Packaging Line 1' },
-        { id: 'w2', name: 'Ali', dept: 'Packaging Line 2' },
-        { id: 'w3', name: 'Tariq', dept: 'QC & Audit' },
-        { id: 'w4', name: 'Farhan', dept: 'Finishing Section' },
-        { id: 'w5', name: 'Shoaib', dept: 'Admin / Manager' }
-    ];
+    // Auto reset old dummy workers (Usman, Ali, etc.) from localStorage
+    try {
+        if (!localStorage.getItem('PACKING_WORKERS_RESET_V2')) {
+            localStorage.removeItem('PACKING_WORKERS');
+            localStorage.removeItem('PACKING_ACTIVE_USER');
+            localStorage.setItem('PACKING_WORKERS_RESET_V2', 'true');
+        }
+    } catch (e) {}
+
+    const DEFAULT_WORKERS = [];
 
     function getWorkers() {
         try {
             const stored = localStorage.getItem('PACKING_WORKERS');
             if (stored) {
                 const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                if (Array.isArray(parsed)) return parsed;
             }
         } catch (e) {}
-        localStorage.setItem('PACKING_WORKERS', JSON.stringify(DEFAULT_WORKERS));
-        return DEFAULT_WORKERS;
+        return [];
     }
 
     function saveWorkers(list) {
@@ -1252,11 +1256,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function getActiveUser() {
         try {
             const u = localStorage.getItem('PACKING_ACTIVE_USER');
-            if (u) return JSON.parse(u);
+            if (u) {
+                const parsed = JSON.parse(u);
+                if (parsed && parsed.name) return parsed;
+            }
         } catch (e) {}
-        const def = { name: 'Usman', dept: 'Packaging Line 1' };
-        localStorage.setItem('PACKING_ACTIVE_USER', JSON.stringify(def));
-        return def;
+        return null;
     }
 
     function setActiveUser(userObj) {
@@ -1303,7 +1308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auto-record submission into Central Log
     function logCurrentReportSubmission() {
         const user = getActiveUser();
-        const workerName = user ? user.name : 'Usman';
+        const workerName = user ? user.name : 'General Worker';
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -1419,14 +1424,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const workers = getWorkers();
         const active = getActiveUser();
 
-        selectWorkerList.innerHTML = workers.map(w => `
-            <option value="${w.name}" ${active && active.name === w.name ? 'selected' : ''}>
-                ${w.name} (${w.dept || 'Packaging'})
-            </option>
-        `).join('');
+        if (workers.length === 0) {
+            selectWorkerList.innerHTML = `<option value="">-- Koi Worker Mojood Nahi Hai --</option>`;
+            if (btnSetActiveWorker) btnSetActiveWorker.disabled = true;
+            if (btnDeleteWorker) btnDeleteWorker.disabled = true;
+        } else {
+            selectWorkerList.innerHTML = workers.map(w => `
+                <option value="${w.name}" ${active && active.name === w.name ? 'selected' : ''}>
+                    ${w.name} ${w.dept ? '(' + w.dept + ')' : ''}
+                </option>
+            `).join('');
+            if (btnSetActiveWorker) btnSetActiveWorker.disabled = false;
+            if (btnDeleteWorker) btnDeleteWorker.disabled = false;
+        }
 
         if (authActiveUserDisplay) {
-            authActiveUserDisplay.textContent = active ? `${active.name} (${active.dept || 'Packaging Line 1'})` : 'None Selected';
+            authActiveUserDisplay.textContent = active ? `${active.name} ${active.dept ? '(' + active.dept + ')' : ''}` : 'Koi Worker Active Nahi Hai';
         }
 
         // Also update filterLogWorker dropdown in admin dashboard
@@ -1442,12 +1455,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnSetActiveWorker && selectWorkerList) {
         btnSetActiveWorker.addEventListener('click', () => {
             const chosenName = selectWorkerList.value;
+            if (!chosenName) return;
             const workers = getWorkers();
             const found = workers.find(w => w.name === chosenName) || { name: chosenName, dept: 'Packaging Line 1' };
             setActiveUser(found);
             updateNavAuthBadge();
             hideModal(modalWorkerSelect);
             showToast(`👤 Active Worker: ${found.name}`);
+        });
+    }
+
+    // Delete Selected Worker
+    if (btnDeleteWorker && selectWorkerList) {
+        btnDeleteWorker.addEventListener('click', () => {
+            const chosenName = selectWorkerList.value;
+            if (!chosenName) return;
+            if (!confirm(`Kya aap "${chosenName}" worker ko delete karna chahte hain?`)) return;
+            let workers = getWorkers().filter(w => w.name !== chosenName);
+            saveWorkers(workers);
+            const active = getActiveUser();
+            if (active && active.name === chosenName) {
+                setActiveUser(workers.length > 0 ? workers[0] : null);
+            }
+            updateWorkerSelectDropdown();
+            updateNavAuthBadge();
+            showToast(`🗑️ Worker "${chosenName}" delete ho gaya!`);
+        });
+    }
+
+    // Delete All Workers
+    if (btnDeleteAllWorkers) {
+        btnDeleteAllWorkers.addEventListener('click', () => {
+            if (!confirm('Kya aap waqai tamam workers ko delete karna chahte hain?')) return;
+            saveWorkers([]);
+            setActiveUser(null);
+            updateWorkerSelectDropdown();
+            updateNavAuthBadge();
+            showToast('🗑️ Tamam workers delete ho gaye!');
         });
     }
 
