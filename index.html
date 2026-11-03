@@ -204,13 +204,13 @@
 
       <!-- MODE SWITCHER TABS: Single Job vs Bulk Multiple Jobs -->
       <div class="flex items-center p-1 bg-slate-200/80 rounded-xl gap-1 border border-slate-300/60 shadow-xs">
-        <button id="tab-btn-single" type="button" class="flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active">
-          <i data-lucide="search" class="w-3.5 h-3.5 text-emerald-600"></i>
-          <span>Single Job Search</span>
+        <button id="tab-btn-single" type="button" class="flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active cursor-pointer select-none" style="touch-action: manipulation;">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-emerald-600 pointer-events-none"></i>
+          <span class="pointer-events-none">Single Job Search</span>
         </button>
-        <button id="tab-btn-bulk" type="button" class="flex-1 py-2 px-3 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active">
-          <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i>
-          <span>Bulk Jobs (Bohat Saari Jobs)</span>
+        <button id="tab-btn-bulk" type="button" class="flex-1 py-2 px-3 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active cursor-pointer select-none" style="touch-action: manipulation;">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600 pointer-events-none"></i>
+          <span class="pointer-events-none">Bulk Jobs (Bohat Saari Jobs)</span>
         </button>
       </div>
 

@@ -54,6 +54,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnResetForm = document.getElementById('btn-reset-form');
     const btnAddToMulti = document.getElementById('btn-add-to-multi');
 
+    // --- Bulk Mode Elements ---
+    const tabBtnSingle = document.getElementById('tab-btn-single');
+    const tabBtnBulk = document.getElementById('tab-btn-bulk');
+    const sectionSingleMode = document.getElementById('section-single-mode');
+    const sectionBulkMode = document.getElementById('section-bulk-mode');
+    const inputBulkJobs = document.getElementById('input-bulk-jobs');
+    const inputBulkRemarks = document.getElementById('input-bulk-remarks');
+    const btnGenerateBulk = document.getElementById('btn-generate-bulk');
+    const btnClearBulkText = document.getElementById('btn-clear-bulk-text');
+    const bulkStatusBox = document.getElementById('bulk-status-box');
+    const bulkRemarkChips = document.querySelectorAll('.bulk-remark-chip');
+
+    // --- Admin & Worker Auth Elements ---
+    const btnNavAdmin = document.getElementById('btn-nav-admin');
+    const labelNavAdmin = document.getElementById('label-nav-admin');
+    const btnNavWorker = document.getElementById('btn-nav-worker');
+    const labelNavWorker = document.getElementById('label-nav-worker');
+    const modalAdminLogin = document.getElementById('modal-admin-login');
+    const modalAdminLoginClose = document.getElementById('modal-admin-login-close');
+    const inputAdminUsername = document.getElementById('input-admin-username');
+    const inputAdminPassword = document.getElementById('input-admin-password');
+    const btnLoginAdmin = document.getElementById('btn-login-admin');
+    const modalWorkerSelect = document.getElementById('modal-worker-select');
+    const modalWorkerClose = document.getElementById('modal-worker-close');
+    const authActiveUserDisplay = document.getElementById('auth-active-user-display');
+    const selectWorkerList = document.getElementById('select-worker-list');
+    const btnSetActiveWorker = document.getElementById('btn-set-active-worker');
+    const inputNewWorkerName = document.getElementById('input-new-worker-name');
+    const inputNewWorkerDept = document.getElementById('input-new-worker-dept');
+    const btnCreateWorker = document.getElementById('btn-create-worker');
+    const modalAdminDashboard = document.getElementById('modal-admin-dashboard');
+    const modalAdminClose = document.getElementById('modal-admin-close');
+    const btnAdminLogout = document.getElementById('btn-admin-logout');
+
+    const kpiTodayJobs = document.getElementById('kpi-today-jobs');
+    const kpiTodayQty = document.getElementById('kpi-today-qty');
+    const kpiActiveWorkers = document.getElementById('kpi-active-workers');
+    const kpiTotalLogs = document.getElementById('kpi-total-logs');
+    const btnLogDateFilters = document.querySelectorAll('.btn-log-date-filter');
+    const filterLogWorker = document.getElementById('filter-log-worker');
+    const inputSearchLogs = document.getElementById('input-search-logs');
+    const adminLogsTbody = document.getElementById('admin-logs-tbody');
+    const logRecordsCount = document.getElementById('log-records-count');
+    const btnExportExcel = document.getElementById('btn-export-excel');
+    const btnClearLogs = document.getElementById('btn-clear-logs');
+
     // Preview & Mode Switchers
     const btnFormatSingle = document.getElementById('btn-format-single');
     const btnFormatMulti = document.getElementById('btn-format-multi');
@@ -606,19 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- Mode Switcher (Single vs Bulk Tab) ---
-    const tabBtnSingle = document.getElementById('tab-btn-single');
-    const tabBtnBulk = document.getElementById('tab-btn-bulk');
-    const sectionSingleMode = document.getElementById('section-single-mode');
-    const sectionBulkMode = document.getElementById('section-bulk-mode');
-
-    // Bulk Elements
-    const inputBulkJobs = document.getElementById('input-bulk-jobs');
-    const inputBulkRemarks = document.getElementById('input-bulk-remarks');
-    const btnGenerateBulk = document.getElementById('btn-generate-bulk');
-    const btnClearBulkText = document.getElementById('btn-clear-bulk-text');
-    const bulkStatusBox = document.getElementById('bulk-status-box');
-    const bulkRemarkChips = document.querySelectorAll('.bulk-remark-chip');
+    // --- Mode Switcher (Single vs Bulk Tab & Bulk Compilation) ---
 
     // Parse job numbers accurately from any pasted text
     function parseBulkJobTokens(rawText) {
@@ -1351,46 +1385,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- DOM Elements for Auth & Admin ---
-    // Dedicated Header Nav Buttons
-    const btnNavAdmin = document.getElementById('btn-nav-admin');
-    const labelNavAdmin = document.getElementById('label-nav-admin');
-    const btnNavWorker = document.getElementById('btn-nav-worker');
-    const labelNavWorker = document.getElementById('label-nav-worker');
-
-    // Admin Login Modal Elements
-    const modalAdminLogin = document.getElementById('modal-admin-login');
-    const modalAdminLoginClose = document.getElementById('modal-admin-login-close');
-    const inputAdminUsername = document.getElementById('input-admin-username');
-    const inputAdminPassword = document.getElementById('input-admin-password');
-    const btnLoginAdmin = document.getElementById('btn-login-admin');
-
-    // Worker Selection Modal Elements
-    const modalWorkerSelect = document.getElementById('modal-worker-select');
-    const modalWorkerClose = document.getElementById('modal-worker-close');
-    const authActiveUserDisplay = document.getElementById('auth-active-user-display');
-    const selectWorkerList = document.getElementById('select-worker-list');
-    const btnSetActiveWorker = document.getElementById('btn-set-active-worker');
-    const inputNewWorkerName = document.getElementById('input-new-worker-name');
-    const inputNewWorkerDept = document.getElementById('input-new-worker-dept');
-    const btnCreateWorker = document.getElementById('btn-create-worker');
-
-    // Admin Dashboard Modal & Controls
-    const modalAdminDashboard = document.getElementById('modal-admin-dashboard');
-    const modalAdminClose = document.getElementById('modal-admin-close');
-    const btnAdminLogout = document.getElementById('btn-admin-logout');
-
-    const kpiTodayJobs = document.getElementById('kpi-today-jobs');
-    const kpiTodayQty = document.getElementById('kpi-today-qty');
-    const kpiActiveWorkers = document.getElementById('kpi-active-workers');
-    const kpiTotalLogs = document.getElementById('kpi-total-logs');
-    const btnLogDateFilters = document.querySelectorAll('.btn-log-date-filter');
-    const filterLogWorker = document.getElementById('filter-log-worker');
-    const inputSearchLogs = document.getElementById('input-search-logs');
-    const adminLogsTbody = document.getElementById('admin-logs-tbody');
-    const logRecordsCount = document.getElementById('log-records-count');
-    const btnExportExcel = document.getElementById('btn-export-excel');
-    const btnClearLogs = document.getElementById('btn-clear-logs');
+    // --- Auth & Admin Portal Logic ---
 
     let currentLogDateFilter = 'today'; // 'today', 'yesterday', 'week', 'all'
 
