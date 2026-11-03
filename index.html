@@ -124,10 +124,16 @@
       <!-- Action Buttons -->
       <div class="flex items-center gap-1.5 sm:gap-2">
         
+        <!-- User & Admin Login Button -->
+        <button id="btn-user-auth" class="tap-active text-xs bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition" title="Worker Login / Admin Dashboard">
+          <i data-lucide="user" id="icon-user-nav" class="w-3.5 h-3.5 text-amber-950"></i>
+          <span id="label-user-nav" class="text-[11px] sm:text-xs">Login / User</span>
+        </button>
+
         <!-- PWA Install Mobile App Button -->
-        <button id="btn-install-app" class="hidden tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow flex items-center gap-1.5 transition" title="Mobile App Install Karein">
-          <i data-lucide="download" class="w-3.5 h-3.5 text-amber-950"></i>
-          <span class="text-[11px] sm:text-xs">Install App</span>
+        <button id="btn-install-app" class="hidden tap-active text-xs bg-emerald-400 hover:bg-emerald-300 text-emerald-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow flex items-center gap-1.5 transition" title="Mobile App Install Karein">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-950"></i>
+          <span class="text-[11px] sm:text-xs">Install</span>
         </button>
 
         <!-- Live System Sync Button -->
@@ -560,6 +566,263 @@
         <p class="text-[10px] text-amber-800/90 leading-tight">
           Mobile aur PC ka same Wi-Fi hona zaroori hai. Agar link na khule to <strong>ALLOW_MOBILE_FIREWALL.bat</strong> par double-click karein.
         </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: USER & ADMIN LOGIN / PORTAL -->
+  <!-- ============================================== -->
+  <div id="modal-user-auth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-4 sm:p-5 space-y-4">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-slate-800 text-sm sm:text-base">User & Admin Portal</h3>
+            <p class="text-[10px] text-slate-400">Worker select karein ya Admin Dashboard kholein</p>
+          </div>
+        </div>
+        <button id="modal-auth-close" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg tap-active">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Auth Tabs: Worker vs Admin -->
+      <div class="flex items-center p-1 bg-slate-100 rounded-xl gap-1">
+        <button id="auth-tab-worker" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-xs tap-active">
+          <i data-lucide="user" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>Worker / Operator</span>
+        </button>
+        <button id="auth-tab-admin" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active">
+          <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span>Admin (Shoaib)</span>
+        </button>
+      </div>
+
+      <!-- 1. WORKER LOGIN & SELECTION TAB -->
+      <div id="auth-section-worker" class="space-y-3">
+        
+        <!-- Active User Status -->
+        <div class="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between">
+          <div>
+            <span class="text-[9px] font-bold text-emerald-700 block uppercase">Current Active User:</span>
+            <span id="auth-active-user-display" class="font-black text-xs sm:text-sm text-emerald-900 font-mono">Not Selected</span>
+          </div>
+          <button id="btn-logout-user" class="hidden text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-white px-2 py-1 rounded-lg border border-rose-200 tap-active">
+            Logout
+          </button>
+        </div>
+
+        <!-- Select Existing Worker -->
+        <div class="space-y-1.5">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            Worker Name Select Karein
+          </label>
+          <div class="flex items-center gap-1.5">
+            <select id="select-worker-list" class="flex-1 text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none transition font-semibold">
+              <!-- Populated by JS -->
+            </select>
+            <button id="btn-set-active-worker" class="px-3 py-2 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 text-xs font-black rounded-xl shadow-xs shrink-0 tap-active">
+              Select
+            </button>
+          </div>
+        </div>
+
+        <!-- Add New Worker Form (Expandable) -->
+        <div class="border-t border-slate-100 pt-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold text-slate-700 flex items-center gap-1">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5 text-emerald-600"></i>
+              Naya Worker Create Karein
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <input type="text" id="input-new-worker-name" placeholder="Worker Name (e.g. Farhan)" class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none">
+            <input type="text" id="input-new-worker-dept" placeholder="Dept / Line (e.g. Packing 1)" class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none">
+          </div>
+          <button id="btn-create-worker" class="w-full py-2 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 tap-active">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Add Worker to System</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 2. ADMIN LOGIN TAB -->
+      <div id="auth-section-admin" class="space-y-3 hidden">
+        <div class="bg-amber-50/70 border border-amber-200 p-2.5 rounded-xl text-xs text-amber-900 space-y-1">
+          <div class="font-extrabold flex items-center gap-1 text-amber-900">
+            <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-600"></i>
+            Super Admin Portal (Shoaib)
+          </div>
+          <p class="text-[10px] text-amber-800/90 leading-tight">
+            Admin login karke aap daily tamam workers ki packing reports dekh aur Excel me download kar sakte hain.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Username</label>
+            <input type="text" id="input-admin-username" value="admin" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none font-bold">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Password</label>
+            <input type="password" id="input-admin-password" placeholder="Enter password (shoaib65)" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none font-bold">
+          </div>
+        </div>
+
+        <button id="btn-login-admin" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-amber-950 text-xs font-black rounded-xl shadow-md flex items-center justify-center gap-1.5 tap-active transition">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span>LOGIN AS ADMIN</span>
+        </button>
+
+        <p class="text-[9px] text-center text-slate-400">
+          Default Credentials: User <strong>admin</strong> | Pass <strong>shoaib65</strong>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: ADMIN CENTRAL DASHBOARD (Shoaib Portal) -->
+  <!-- ============================================== -->
+  <div id="modal-admin-dashboard" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+      
+      <!-- Top Admin Bar -->
+      <div class="bg-[#075E54] text-white p-3 sm:p-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black">
+            <i data-lucide="crown" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h2 class="font-extrabold text-sm sm:text-base">Admin Central Dashboard</h2>
+              <span class="text-[9px] font-black bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.2 rounded-md">Shoaib</span>
+            </div>
+            <p class="text-[10px] text-emerald-200/80">Daily Worker Packing Activity & Central DB Logs</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-admin-logout" class="text-xs bg-rose-500/80 hover:bg-rose-500 text-white font-bold px-2.5 py-1.5 rounded-xl border border-rose-400/40 shadow-xs flex items-center gap-1 tap-active">
+            <i data-lucide="log-out" class="w-3 h-3"></i>
+            <span class="hidden sm:inline">Logout</span>
+          </button>
+          <button id="modal-admin-close" class="text-white/80 hover:text-white p-1 rounded-lg tap-active">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dashboard Scrollable Body -->
+      <div class="p-3 sm:p-5 overflow-y-auto space-y-4 flex-1">
+        
+        <!-- KPI Metric Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          
+          <div class="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="layers" class="w-3.5 h-3.5"></i> Today's Jobs
+            </span>
+            <span id="kpi-today-jobs" class="text-lg sm:text-2xl font-black text-emerald-950 font-mono mt-1">0</span>
+          </div>
+
+          <div class="bg-sky-50 border border-sky-200/80 rounded-2xl p-3 flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-sky-700 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="package-check" class="w-3.5 h-3.5"></i> Today's Pcs (Qty)
+            </span>
+            <span id="kpi-today-qty" class="text-lg sm:text-2xl font-black text-sky-950 font-mono mt-1">0</span>
+          </div>
+
+          <div class="bg-purple-50 border border-purple-200/80 rounded-2xl p-3 flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-purple-700 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="users" class="w-3.5 h-3.5"></i> Active Workers
+            </span>
+            <span id="kpi-active-workers" class="text-lg sm:text-2xl font-black text-purple-950 font-mono mt-1">0</span>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="database" class="w-3.5 h-3.5"></i> All-Time Logs
+            </span>
+            <span id="kpi-total-logs" class="text-lg sm:text-2xl font-black text-slate-800 font-mono mt-1">0</span>
+          </div>
+
+        </div>
+
+        <!-- Controls: Filters & Export Button Bar -->
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+          
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            
+            <!-- Date Filter Pills -->
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+              <button data-log-date="today" class="btn-log-date-filter px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs tap-active">Today</button>
+              <button data-log-date="yesterday" class="btn-log-date-filter px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 border border-slate-200 tap-active">Yesterday</button>
+              <button data-log-date="week" class="btn-log-date-filter px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 border border-slate-200 tap-active">Last 7 Days</button>
+              <button data-log-date="all" class="btn-log-date-filter px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 border border-slate-200 tap-active">All Time</button>
+            </div>
+
+            <!-- EXPORT TO EXCEL BUTTON -->
+            <button id="btn-export-excel" class="px-3 py-1.5 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 text-xs font-black rounded-xl shadow-sm flex items-center gap-1.5 tap-active transition">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+              <span>DOWNLOAD EXCEL (.XLSX)</span>
+            </button>
+
+          </div>
+
+          <!-- Secondary Filters: Worker filter & Search inside logs -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200/80">
+            <select id="filter-log-worker" class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white font-bold outline-none">
+              <option value="all">All Workers (Sb Workers)</option>
+            </select>
+            <input type="text" id="input-search-logs" placeholder="Search by Job #, PO #, Remarks..." class="text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white outline-none">
+          </div>
+
+        </div>
+
+        <!-- Logs Table / Feed -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="list-checks" class="w-4 h-4 text-emerald-600"></i>
+              Packing Activity Log (<span id="log-records-count">0</span>)
+            </h3>
+            <button id="btn-clear-logs" class="text-[10px] font-bold text-rose-500 hover:text-rose-700 tap-active">
+              Clear Logs
+            </button>
+          </div>
+
+          <!-- Desktop Table & Mobile Cards -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <div class="max-h-72 overflow-y-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-100 text-slate-600 text-[10px] uppercase font-bold sticky top-0 z-10 border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5">Date & Time</th>
+                    <th class="p-2.5">Worker</th>
+                    <th class="p-2.5">Job #</th>
+                    <th class="p-2.5">PO / Style</th>
+                    <th class="p-2.5">QTY</th>
+                    <th class="p-2.5">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-logs-tbody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>

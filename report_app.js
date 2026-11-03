@@ -918,6 +918,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (navigator.vibrate) navigator.vibrate(30);
             showToast('📋 WhatsApp Report Copied to Clipboard!');
             
+            // Auto-log report submission into Central DB under Active Worker
+            logCurrentReportSubmission();
+
             if (btnCopyTextDesktop) btnCopyTextDesktop.textContent = 'COPIED TO CLIPBOARD!';
             if (btnCopyTextMobile) btnCopyTextMobile.textContent = 'Copied!';
             
@@ -942,6 +945,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             url = `https://api.whatsapp.com/send?text=${encodedText}`;
         }
+
+        // Auto-log report submission into Central DB under Active Worker
+        logCurrentReportSubmission();
 
         if (navigator.vibrate) navigator.vibrate(20);
         window.open(url, '_blank');
@@ -1091,6 +1097,556 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsArrayBuffer(file);
         });
     }
+
+    // =========================================================================
+    // USER AUTHENTICATION, CENTRAL DATABASE & ADMIN DASHBOARD ENGINE
+    // Admin: admin / shoaib65 | Multi-worker logging & SheetJS Excel Export
+    // =========================================================================
+
+    const DEFAULT_WORKERS = [
+        { id: 'w1', name: 'Usman', dept: 'Packaging Line 1' },
+        { id: 'w2', name: 'Ali', dept: 'Packaging Line 2' },
+        { id: 'w3', name: 'Tariq', dept: 'QC & Audit' },
+        { id: 'w4', name: 'Farhan', dept: 'Finishing Section' },
+        { id: 'w5', name: 'Shoaib', dept: 'Admin / Manager' }
+    ];
+
+    function getWorkers() {
+        try {
+            const stored = localStorage.getItem('PACKING_WORKERS');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) {}
+        localStorage.setItem('PACKING_WORKERS', JSON.stringify(DEFAULT_WORKERS));
+        return DEFAULT_WORKERS;
+    }
+
+    function saveWorkers(list) {
+        localStorage.setItem('PACKING_WORKERS', JSON.stringify(list));
+    }
+
+    function getActiveUser() {
+        try {
+            const u = localStorage.getItem('PACKING_ACTIVE_USER');
+            if (u) return JSON.parse(u);
+        } catch (e) {}
+        const def = { name: 'Usman', dept: 'Packaging Line 1' };
+        localStorage.setItem('PACKING_ACTIVE_USER', JSON.stringify(def));
+        return def;
+    }
+
+    function setActiveUser(userObj) {
+        if (userObj) {
+            localStorage.setItem('PACKING_ACTIVE_USER', JSON.stringify(userObj));
+        } else {
+            localStorage.removeItem('PACKING_ACTIVE_USER');
+        }
+        updateNavAuthBadge();
+        updateWorkerSelectDropdown();
+    }
+
+    function isAdminLoggedIn() {
+        return sessionStorage.getItem('PACKING_ADMIN_AUTH') === 'true' || localStorage.getItem('PACKING_ADMIN_AUTH') === 'true';
+    }
+
+    function setAdminLoggedIn(status) {
+        if (status) {
+            sessionStorage.setItem('PACKING_ADMIN_AUTH', 'true');
+            localStorage.setItem('PACKING_ADMIN_AUTH', 'true');
+        } else {
+            sessionStorage.removeItem('PACKING_ADMIN_AUTH');
+            localStorage.removeItem('PACKING_ADMIN_AUTH');
+        }
+        updateNavAuthBadge();
+    }
+
+    function getPackingLogs() {
+        try {
+            const stored = localStorage.getItem('PACKING_LOGS');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) return parsed;
+            }
+        } catch (e) {}
+        return [];
+    }
+
+    function savePackingLogs(logs) {
+        if (logs.length > 3000) logs.length = 3000;
+        localStorage.setItem('PACKING_LOGS', JSON.stringify(logs));
+    }
+
+    // Auto-record submission into Central Log
+    function logCurrentReportSubmission() {
+        const user = getActiveUser();
+        const workerName = user ? user.name : 'Usman';
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+        const logs = getPackingLogs();
+        let loggedCount = 0;
+
+        if (reportMode === 'bulk') {
+            // Find matched jobs from bulk
+            const rawInput = inputBulkJobs ? inputBulkJobs.value.trim() : '';
+            const commonRemarks = (inputBulkRemarks && inputBulkRemarks.value.trim()) ? inputBulkRemarks.value.trim() : 'Packed & Closed';
+            if (rawInput) {
+                const tokens = [...new Set(rawInput.split(/[\r\n,;\t ]+/).map(t => t.trim().toUpperCase()).filter(t => t.length > 0))];
+                tokens.forEach(tok => {
+                    const cleanTok = tok.replace(/^J/i, '');
+                    const found = jobsDataset.find(item => {
+                        const j = String(item.job || '').toUpperCase();
+                        return j === tok || j.replace(/^J/i, '') === cleanTok;
+                    });
+                    if (found) {
+                        logs.unshift({
+                            id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                            timestamp: now.toISOString(),
+                            date: dateStr,
+                            time: timeStr,
+                            worker: workerName,
+                            job: found.job,
+                            po: found.po || '',
+                            style: found.style || '',
+                            finish: found.finish || '',
+                            qty: Number(found.qty || 0),
+                            customer: found.customer || '',
+                            remarks: commonRemarks
+                        });
+                        loggedCount++;
+                    }
+                });
+            }
+        } else if (reportMode === 'multi' && multiQueue.length > 0) {
+            multiQueue.forEach(item => {
+                logs.unshift({
+                    id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    timestamp: now.toISOString(),
+                    date: dateStr,
+                    time: timeStr,
+                    worker: workerName,
+                    job: item.job,
+                    po: item.po || '',
+                    style: item.style || '',
+                    finish: item.finish || '',
+                    qty: Number(item.qty || 0),
+                    customer: item.customer || '',
+                    remarks: item.remarks || 'Ready'
+                });
+                loggedCount++;
+            });
+        } else if (currentJob) {
+            const remarks = inputRemarks.value.trim() || 'Packed';
+            logs.unshift({
+                id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                timestamp: now.toISOString(),
+                date: dateStr,
+                time: timeStr,
+                worker: workerName,
+                job: currentJob.job,
+                po: currentJob.po || '',
+                style: currentJob.style || '',
+                finish: currentJob.finish || '',
+                qty: Number(currentJob.qty || 0),
+                customer: currentJob.customer || '',
+                remarks: remarks
+            });
+            loggedCount++;
+        }
+
+        if (loggedCount > 0) {
+            savePackingLogs(logs);
+            showToast(`✅ Saved ${loggedCount} job(s) under "${workerName}" in Central DB!`);
+        }
+    }
+
+    // --- DOM Elements for Auth & Admin ---
+    const btnUserAuth = document.getElementById('btn-user-auth');
+    const labelUserNav = document.getElementById('label-user-nav');
+    const iconUserNav = document.getElementById('icon-user-nav');
+    const modalUserAuth = document.getElementById('modal-user-auth');
+    const modalAuthClose = document.getElementById('modal-auth-close');
+    const authTabWorker = document.getElementById('auth-tab-worker');
+    const authTabAdmin = document.getElementById('auth-tab-admin');
+    const authSectionWorker = document.getElementById('auth-section-worker');
+    const authSectionAdmin = document.getElementById('auth-section-admin');
+    const authActiveUserDisplay = document.getElementById('auth-active-user-display');
+    const btnLogoutUser = document.getElementById('btn-logout-user');
+    const selectWorkerList = document.getElementById('select-worker-list');
+    const btnSetActiveWorker = document.getElementById('btn-set-active-worker');
+    const inputNewWorkerName = document.getElementById('input-new-worker-name');
+    const inputNewWorkerDept = document.getElementById('input-new-worker-dept');
+    const btnCreateWorker = document.getElementById('btn-create-worker');
+
+    // Admin Elements
+    const inputAdminUsername = document.getElementById('input-admin-username');
+    const inputAdminPassword = document.getElementById('input-admin-password');
+    const btnLoginAdmin = document.getElementById('btn-login-admin');
+    const modalAdminDashboard = document.getElementById('modal-admin-dashboard');
+    const modalAdminClose = document.getElementById('modal-admin-close');
+    const btnAdminLogout = document.getElementById('btn-admin-logout');
+
+    // Admin Dashboard KPI & Controls
+    const kpiTodayJobs = document.getElementById('kpi-today-jobs');
+    const kpiTodayQty = document.getElementById('kpi-today-qty');
+    const kpiActiveWorkers = document.getElementById('kpi-active-workers');
+    const kpiTotalLogs = document.getElementById('kpi-total-logs');
+    const btnLogDateFilters = document.querySelectorAll('.btn-log-date-filter');
+    const filterLogWorker = document.getElementById('filter-log-worker');
+    const inputSearchLogs = document.getElementById('input-search-logs');
+    const adminLogsTbody = document.getElementById('admin-logs-tbody');
+    const logRecordsCount = document.getElementById('log-records-count');
+    const btnExportExcel = document.getElementById('btn-export-excel');
+    const btnClearLogs = document.getElementById('btn-clear-logs');
+
+    let currentLogDateFilter = 'today'; // 'today', 'yesterday', 'week', 'all'
+
+    // Update Nav Button State
+    function updateNavAuthBadge() {
+        if (!labelUserNav) return;
+        if (isAdminLoggedIn()) {
+            labelUserNav.textContent = 'Admin (Shoaib)';
+            if (btnUserAuth) {
+                btnUserAuth.className = 'tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition';
+            }
+        } else {
+            const user = getActiveUser();
+            if (user && user.name) {
+                labelUserNav.textContent = user.name;
+                if (btnUserAuth) {
+                    btnUserAuth.className = 'tap-active text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition';
+                }
+            } else {
+                labelUserNav.textContent = 'Login / User';
+                if (btnUserAuth) {
+                    btnUserAuth.className = 'tap-active text-xs bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition';
+                }
+            }
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // Populate Worker Dropdown
+    function updateWorkerSelectDropdown() {
+        if (!selectWorkerList) return;
+        const workers = getWorkers();
+        const active = getActiveUser();
+
+        selectWorkerList.innerHTML = workers.map(w => `
+            <option value="${w.name}" ${active && active.name === w.name ? 'selected' : ''}>
+                ${w.name} (${w.dept || 'Packaging'})
+            </option>
+        `).join('');
+
+        if (authActiveUserDisplay) {
+            authActiveUserDisplay.textContent = active ? `${active.name} (${active.dept || 'Packaging'})` : 'None Selected';
+        }
+
+        if (btnLogoutUser) {
+            if (active) btnLogoutUser.classList.remove('hidden');
+            else btnLogoutUser.classList.add('hidden');
+        }
+
+        // Also update filterLogWorker dropdown in admin dashboard
+        if (filterLogWorker) {
+            const currentVal = filterLogWorker.value;
+            filterLogWorker.innerHTML = `<option value="all">All Workers (Sb Workers)</option>` +
+                workers.map(w => `<option value="${w.name}">${w.name}</option>`).join('');
+            if (currentVal) filterLogWorker.value = currentVal;
+        }
+    }
+
+    // Toggle Auth Tabs
+    if (authTabWorker && authTabAdmin) {
+        authTabWorker.addEventListener('click', () => {
+            authTabWorker.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-xs tap-active';
+            authTabAdmin.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
+            authSectionWorker.classList.remove('hidden');
+            authSectionAdmin.classList.add('hidden');
+        });
+
+        authTabAdmin.addEventListener('click', () => {
+            authTabAdmin.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-xs tap-active';
+            authTabWorker.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active';
+            authSectionAdmin.classList.remove('hidden');
+            authSectionWorker.classList.add('hidden');
+        });
+    }
+
+    // Worker Selection
+    if (btnSetActiveWorker && selectWorkerList) {
+        btnSetActiveWorker.addEventListener('click', () => {
+            const chosenName = selectWorkerList.value;
+            const workers = getWorkers();
+            const found = workers.find(w => w.name === chosenName) || { name: chosenName, dept: 'Packaging' };
+            setActiveUser(found);
+            if (modalUserAuth) modalUserAuth.classList.add('hidden');
+            showToast(`👤 Active Worker set to: ${found.name}`);
+        });
+    }
+
+    // Create New Worker
+    if (btnCreateWorker) {
+        btnCreateWorker.addEventListener('click', () => {
+            const name = inputNewWorkerName ? inputNewWorkerName.value.trim() : '';
+            const dept = inputNewWorkerDept ? inputNewWorkerDept.value.trim() : 'Packaging';
+
+            if (!name) {
+                showToast('⚠️ Worker ka naam likhein!', false);
+                return;
+            }
+
+            const workers = getWorkers();
+            const exists = workers.some(w => w.name.toLowerCase() === name.toLowerCase());
+            if (exists) {
+                showToast(`⚠️ Worker "${name}" pehle se mojood hai!`, false);
+                return;
+            }
+
+            const newWorker = {
+                id: 'w_' + Date.now(),
+                name: name,
+                dept: dept || 'Packaging'
+            };
+
+            workers.push(newWorker);
+            saveWorkers(workers);
+            setActiveUser(newWorker);
+
+            if (inputNewWorkerName) inputNewWorkerName.value = '';
+            if (inputNewWorkerDept) inputNewWorkerDept.value = '';
+            if (modalUserAuth) modalUserAuth.classList.add('hidden');
+
+            showToast(`🎉 Naya worker "${name}" add aur active ho gaya!`);
+        });
+    }
+
+    // Logout Worker
+    if (btnLogoutUser) {
+        btnLogoutUser.addEventListener('click', () => {
+            setActiveUser(null);
+            showToast('Logged out of worker profile');
+        });
+    }
+
+    // Admin Login (admin / shoaib65)
+    if (btnLoginAdmin) {
+        btnLoginAdmin.addEventListener('click', () => {
+            const user = inputAdminUsername ? inputAdminUsername.value.trim().toLowerCase() : '';
+            const pass = inputAdminPassword ? inputAdminPassword.value.trim() : '';
+
+            if (user === 'admin' && pass === 'shoaib65') {
+                setAdminLoggedIn(true);
+                if (modalUserAuth) modalUserAuth.classList.add('hidden');
+                openAdminDashboard();
+                showToast('👑 Welcome Admin Shoaib!');
+            } else {
+                showToast('❌ Ghalat Credentials! User: admin | Pass: shoaib65', false);
+            }
+        });
+    }
+
+    // Open Admin Dashboard & Render Data
+    function openAdminDashboard() {
+        if (!modalAdminDashboard) return;
+        renderAdminDashboard();
+        modalAdminDashboard.classList.remove('hidden');
+    }
+
+    // Admin Dashboard Render Logic
+    function renderAdminDashboard() {
+        const logs = getPackingLogs();
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        // Filter by Date
+        let filtered = logs.filter(log => {
+            if (currentLogDateFilter === 'today') return log.date === todayStr;
+            if (currentLogDateFilter === 'yesterday') return log.date === yesterdayStr;
+            if (currentLogDateFilter === 'week') return new Date(log.date) >= weekAgo;
+            return true; // 'all'
+        });
+
+        // Filter by Worker
+        const chosenWorker = filterLogWorker ? filterLogWorker.value : 'all';
+        if (chosenWorker && chosenWorker !== 'all') {
+            filtered = filtered.filter(log => log.worker === chosenWorker);
+        }
+
+        // Filter by Search Input
+        const searchQuery = inputSearchLogs ? inputSearchLogs.value.trim().toLowerCase() : '';
+        if (searchQuery) {
+            filtered = filtered.filter(log => {
+                return String(log.job || '').toLowerCase().includes(searchQuery) ||
+                       String(log.po || '').toLowerCase().includes(searchQuery) ||
+                       String(log.style || '').toLowerCase().includes(searchQuery) ||
+                       String(log.remarks || '').toLowerCase().includes(searchQuery) ||
+                       String(log.worker || '').toLowerCase().includes(searchQuery);
+            });
+        }
+
+        // Calculate KPIs
+        const todayLogs = logs.filter(l => l.date === todayStr);
+        let todayJobsCount = todayLogs.length;
+        let todayQtySum = todayLogs.reduce((acc, l) => acc + (Number(l.qty) || 0), 0);
+        let activeWorkersToday = new Set(todayLogs.map(l => l.worker)).size;
+
+        if (kpiTodayJobs) kpiTodayJobs.textContent = todayJobsCount.toLocaleString();
+        if (kpiTodayQty) kpiTodayQty.textContent = todayQtySum.toLocaleString() + ' pcs';
+        if (kpiActiveWorkers) kpiActiveWorkers.textContent = activeWorkersToday.toString();
+        if (kpiTotalLogs) kpiTotalLogs.textContent = logs.length.toLocaleString();
+        if (logRecordsCount) logRecordsCount.textContent = filtered.length.toLocaleString();
+
+        // Populate Table
+        if (adminLogsTbody) {
+            if (filtered.length === 0) {
+                adminLogsTbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-6 text-center text-slate-400 text-xs">
+                            Koi record nahi mila. Worker report generate karega to yahan automatic show hoga.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                adminLogsTbody.innerHTML = filtered.map(item => `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100 last:border-b-0">
+                        <td class="p-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                            <span class="block font-bold text-slate-700">${item.date}</span>
+                            <span class="text-[10px] text-slate-400">${item.time}</span>
+                        </td>
+                        <td class="p-2.5 font-bold text-slate-800 whitespace-nowrap">
+                            <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px]">
+                                ${item.worker || 'Worker'}
+                            </span>
+                        </td>
+                        <td class="p-2.5 font-mono font-black text-emerald-800 text-xs whitespace-nowrap">
+                            Job #${item.job}
+                        </td>
+                        <td class="p-2.5 text-slate-600 text-[11px]">
+                            <div><strong>PO:</strong> ${item.po || '-'}</div>
+                            <div class="text-[10px] text-slate-400"><strong>Style:</strong> ${item.style || '-'}</div>
+                        </td>
+                        <td class="p-2.5 font-mono font-black text-slate-900 text-xs whitespace-nowrap">
+                            ${Number(item.qty || 0).toLocaleString()} pcs
+                        </td>
+                        <td class="p-2.5 text-slate-700 text-[11px]">
+                            <span class="bg-slate-100 px-2 py-0.5 rounded text-[10px] font-semibold">${item.remarks || '-'}</span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+    }
+
+    // Date Filter Pills Click
+    btnLogDateFilters.forEach(pill => {
+        pill.addEventListener('click', () => {
+            btnLogDateFilters.forEach(p => {
+                p.className = 'btn-log-date-filter px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 border border-slate-200 tap-active';
+            });
+            pill.className = 'btn-log-date-filter px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs tap-active';
+            currentLogDateFilter = pill.getAttribute('data-log-date');
+            renderAdminDashboard();
+        });
+    });
+
+    if (filterLogWorker) {
+        filterLogWorker.addEventListener('change', renderAdminDashboard);
+    }
+    if (inputSearchLogs) {
+        inputSearchLogs.addEventListener('input', renderAdminDashboard);
+    }
+
+    // Export to Excel (.xlsx) using SheetJS
+    if (btnExportExcel) {
+        btnExportExcel.addEventListener('click', () => {
+            const logs = getPackingLogs();
+            if (logs.length === 0) {
+                showToast('⚠️ Koi records mojood nahi hain!', false);
+                return;
+            }
+
+            if (typeof XLSX === 'undefined') {
+                showToast('❌ SheetJS library load nahi hui.', false);
+                return;
+            }
+
+            const excelRows = logs.map((row, idx) => ({
+                "Sr #": idx + 1,
+                "Date": row.date,
+                "Time": row.time,
+                "Worker / Operator": row.worker,
+                "Job #": row.job,
+                "PO #": row.po,
+                "Style #": row.style,
+                "Finish Name": row.finish,
+                "Order QTY": row.qty,
+                "Buyer": row.customer,
+                "Remarks": row.remarks
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(excelRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Daily_Packing_Log");
+            const todayStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Packing_Report_Log_${todayStr}.xlsx`);
+            showToast('📥 Excel file downloaded successfully!');
+        });
+    }
+
+    // Clear Logs
+    if (btnClearLogs) {
+        btnClearLogs.addEventListener('click', () => {
+            if (confirm('Kya aap waqai tamam packing logs clear karna chahte hain?')) {
+                localStorage.removeItem('PACKING_LOGS');
+                renderAdminDashboard();
+                showToast('🗑️ Logs cleared!');
+            }
+        });
+    }
+
+    // Admin Logout
+    if (btnAdminLogout) {
+        btnAdminLogout.addEventListener('click', () => {
+            setAdminLoggedIn(false);
+            if (modalAdminDashboard) modalAdminDashboard.classList.add('hidden');
+            showToast('Admin Logged out');
+        });
+    }
+
+    // Open User Auth Modal on Nav Button Click
+    if (btnUserAuth) {
+        btnUserAuth.addEventListener('click', () => {
+            if (isAdminLoggedIn()) {
+                openAdminDashboard();
+            } else {
+                updateWorkerSelectDropdown();
+                if (modalUserAuth) modalUserAuth.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Modal Close Handlers
+    if (modalAuthClose && modalUserAuth) {
+        modalAuthClose.addEventListener('click', () => modalUserAuth.classList.add('hidden'));
+    }
+    if (modalAdminClose && modalAdminDashboard) {
+        modalAdminClose.addEventListener('click', () => modalAdminDashboard.classList.add('hidden'));
+    }
+
+    // Initialize Auth & Dropdown States
+    updateWorkerSelectDropdown();
+    updateNavAuthBadge();
 
     // Initial message preview setup
     updatePreview();
