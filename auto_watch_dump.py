@@ -141,23 +141,24 @@ def sync_dump_to_git():
 
         log(f"Parsed {len(jobs):,} jobs (NQA: {stats['nqa']}, Dump: {stats['dump']}, Not Audited: {stats['none']}).")
 
-        # Git operations
+        # Git operations (Runs 100% silently with CREATE_NO_WINDOW so no black cmd windows pop up)
+        no_window_flag = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         os.chdir(PROJECT_DIR)
-        subprocess.run(["git", "config", "http.postBuffer", "524288000"], check=True)
+        subprocess.run(["git", "config", "http.postBuffer", "524288000"], check=True, creationflags=no_window_flag)
         files_to_add = ["jobs_data.js", "Dump.xlsx"]
         if os.path.exists(AUDIT_JS):
             files_to_add.append("audit_data.js")
-        subprocess.run(["git", "add"] + files_to_add, check=True)
+        subprocess.run(["git", "add"] + files_to_add, check=True, creationflags=no_window_flag)
         
-        diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"])
+        diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], creationflags=no_window_flag)
         if diff_check.returncode != 0:
             commit_msg = f"Auto-sync Dump & Audits: {time.strftime('%Y-%m-%d %H:%M')} ({len(jobs):,} jobs)"
-            subprocess.run(["git", "commit", "-m", commit_msg], check=True)
+            subprocess.run(["git", "commit", "-m", commit_msg], check=True, creationflags=no_window_flag)
             
             pushed = False
             for attempt in range(1, 4):
                 log(f"GitHub Cloud par push kiya ja raha hai (Attempt {attempt}/3)...")
-                push_res = subprocess.run(["git", "push", "origin", "main"], capture_output=True, text=True)
+                push_res = subprocess.run(["git", "push", "origin", "main"], capture_output=True, text=True, creationflags=no_window_flag)
                 if push_res.returncode == 0:
                     log(f"[SUCCESS] Cloud site successfully updated with {len(jobs):,} jobs!")
                     pushed = True

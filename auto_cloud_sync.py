@@ -127,26 +127,27 @@ def sync_and_push():
 
         log(f"Parsed {len(jobs):,} jobs (NQA: {stats['nqa']}, Dump: {stats['dump']}, Not Audited: {stats['none']}).")
 
-        # Check git status for changes
-        subprocess.run(["git", "config", "http.postBuffer", "524288000"], check=True)
+        # Check git status for changes (Runs 100% silently with CREATE_NO_WINDOW so no black cmd windows pop up)
+        no_window_flag = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+        subprocess.run(["git", "config", "http.postBuffer", "524288000"], check=True, creationflags=no_window_flag)
         files_to_add = ["jobs_data.js", "Dump.xlsx"]
         if os.path.exists("audit_data.js"):
             files_to_add.append("audit_data.js")
-        subprocess.run(["git", "add"] + files_to_add, check=True)
+        subprocess.run(["git", "add"] + files_to_add, check=True, creationflags=no_window_flag)
 
-        diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"])
+        diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], creationflags=no_window_flag)
         if diff_check.returncode == 0:
             log("[UP-TO-DATE] Koi nayi changes nahi hain. Cloud pehle se updated hai.")
             return True
 
         log("Nayi changes detect hui hain. GitHub par push kiya ja raha hai...")
         commit_msg = f"Auto-sync Dump & NQA Audits: {time.strftime('%Y-%m-%d %H:%M')} ({len(jobs):,} jobs)"
-        subprocess.run(["git", "commit", "-m", commit_msg], check=True)
+        subprocess.run(["git", "commit", "-m", commit_msg], check=True, creationflags=no_window_flag)
 
         # Retry push
         for attempt in range(1, 4):
             log(f"GitHub push attempt {attempt}/3...")
-            res = subprocess.run(["git", "push", "origin", "main"], capture_output=True, text=True)
+            res = subprocess.run(["git", "push", "origin", "main"], capture_output=True, text=True, creationflags=no_window_flag)
             if res.returncode == 0:
                 log("[SUCCESS] GitHub Cloud site 100% updated successfully!")
                 return True
