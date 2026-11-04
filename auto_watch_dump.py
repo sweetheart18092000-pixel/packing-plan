@@ -21,6 +21,7 @@ def log(msg):
     try:
         with open(os.path.join(PROJECT_DIR, "watcher.log"), "a", encoding="utf-8") as f:
             f.write(log_line + "\n")
+            f.flush()
     except Exception:
         pass
 
