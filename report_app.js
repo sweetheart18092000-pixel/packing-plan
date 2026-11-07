@@ -54,6 +54,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayAuditBadge = document.getElementById('display-audit-badge');
     const displayAuditCard = document.getElementById('display-audit-card');
 
+    // Schedule & Planning DOM Elements
+    const displayDestination = document.getElementById('display-destination');
+    const displayExfDate = document.getElementById('display-exf-date');
+    const displayReadyAudit = document.getElementById('display-ready-audit');
+    const displayAuditPrepared = document.getElementById('display-audit-prepared');
+    const displayPlPosition = document.getElementById('display-pl-position');
+    const displayAction = document.getElementById('display-action');
+    const displayActionBadge = document.getElementById('display-action-badge');
+    const displayRemarksEmails = document.getElementById('display-remarks-emails');
+    const rowRemarksEmails = document.getElementById('row-remarks-emails');
+
+    // Packing & Breakdown DOM Elements
+    const displayPack = document.getElementById('display-pack');
+    const displayPackBadge = document.getElementById('display-pack-badge');
+    const displayDpcs = document.getElementById('display-dpcs');
+    const displayDctns = document.getElementById('display-dctns');
+    const displayLoosePcs = document.getElementById('display-loose-pcs');
+    const displayLooseCtns = document.getElementById('display-loose-ctns');
+
     // Remarks & Controls
     const inputRemarks = document.getElementById('input-remarks');
     const quickRemarkBtns = document.querySelectorAll('.quick-remark-btn');
@@ -392,6 +411,35 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // Helper to retrieve any field from window.SCHEDULE_DATA or job object
+    function getJobSchedField(jobOrItem, fieldName) {
+        if (!jobOrItem) return '';
+        if (typeof jobOrItem === 'object' && jobOrItem[fieldName]) {
+            return String(jobOrItem[fieldName]).trim();
+        }
+        let jobNum = '';
+        if (typeof jobOrItem === 'string') {
+            jobNum = jobOrItem.trim().toUpperCase();
+        } else if (typeof jobOrItem === 'object') {
+            jobNum = String(jobOrItem.job || '').trim().toUpperCase();
+        }
+        const cleanJob = jobNum.replace(/^J/i, '');
+        if (typeof window.SCHEDULE_DATA === 'object' && window.SCHEDULE_DATA !== null) {
+            const rec = window.SCHEDULE_DATA[jobNum] || (cleanJob ? window.SCHEDULE_DATA[cleanJob] : null) || (cleanJob ? window.SCHEDULE_DATA['J' + cleanJob] : null);
+            if (rec && rec[fieldName]) {
+                return String(rec[fieldName]).trim();
+            }
+        }
+        const found = jobsDataset.find(j => {
+            const jNum = String(j.job || '').toUpperCase();
+            return jNum === jobNum || jNum.replace(/^J/i, '') === cleanJob;
+        });
+        if (found && found[fieldName]) {
+            return String(found[fieldName]).trim();
+        }
+        return '';
+    }
+
     // Helper to get Assigned Auditor from Packing_Finishing_Shipment_Schedule.xlsm
     function getJobAuditor(jobOrItem) {
         if (!jobOrItem) return 'Not Assigned';
@@ -454,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Smart Format for Multi & Bulk Jobs: Consolidate repeated Style, Finish, Buyer, Auditor, Audit Status & Remarks
+    // Smart Format for Multi & Bulk Jobs: Consolidate repeated Style, Finish, Buyer, Auditor & EXF Date (No Audit Status in WhatsApp)
     function formatSmartJobsReport(jobs, customRemarks = '') {
         if (!jobs || jobs.length === 0) return '';
         let totalQty = 0;
@@ -474,10 +522,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const st = j.audit_status || getJobAuditStatus(j);
             const aud = j.auditor || getJobAuditor(j);
+            const exf = j.exf_date || getJobSchedField(j, 'exf_date');
             groups[key].items.push({
                 ...j,
                 audit_status: st,
-                auditor: aud
+                auditor: aud,
+                exf_date: exf
             });
         });
 
@@ -487,13 +537,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Case A: Single Style Group (All jobs have same Style/Finish)
         if (groupKeys.length === 1) {
             const g = groups[groupKeys[0]];
-            const uniqueStatuses = [...new Set(g.items.map(it => it.audit_status || 'Not Audited'))];
-            const isHomogeneousStatus = uniqueStatuses.length === 1;
-            const groupAuditStatusText = isHomogeneousStatus ? uniqueStatuses[0] : uniqueStatuses.join(' / ');
 
             const assignedAuditors = [...new Set(g.items.map(it => it.auditor).filter(a => a && a !== 'Not Assigned'))];
             const groupAuditorText = assignedAuditors.length > 0 ? assignedAuditors.join(' / ') : 'Not Assigned';
             const isHomogeneousAuditor = assignedAuditors.length <= 1;
+
+            const assignedExf = [...new Set(g.items.map(it => it.exf_date).filter(Boolean))];
+            const groupExfText = assignedExf.length > 0 ? assignedExf.join(' / ') : '';
 
             let msg = `*📦 CLOSED PACKING LISTS UPDATE (${jobs.length} JOBS)*\n`;
             msg += `*Finish Name:* ${g.finish}\n`;
@@ -501,8 +551,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (g.customer && g.customer !== '---') {
                 msg += `*Buyer:* ${g.customer}\n`;
             }
-            msg += `*Auditor:* ${groupAuditorText}\n`;
-            msg += `*Audit Status:* ${groupAuditStatusText}\n`;
+            if (groupAuditorText && groupAuditorText !== 'Not Assigned') {
+                msg += `*Auditor:* ${groupAuditorText}\n`;
+            }
+            if (groupExfText) {
+                msg += `*EXF Date:* ${groupExfText}\n`;
+            }
             msg += `*Remarks:* ${finalRemarks}\n`;
             msg += `-------------------------------------\n`;
             msg += `*JOBS & PO BREAKDOWN:*\n`;
@@ -512,9 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let extraNotes = [];
                 if (!isHomogeneousAuditor && item.auditor && item.auditor !== 'Not Assigned') {
                     extraNotes.push(`Auditor: ${item.auditor}`);
-                }
-                if (!isHomogeneousStatus && item.audit_status) {
-                    extraNotes.push(`Audit: ${item.audit_status}`);
                 }
                 const extra = extraNotes.length > 0 ? ` (${extraNotes.join(' | ')})` : '';
                 msg += `${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${extra}\n`;
@@ -532,13 +583,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let subQty = 0;
             g.items.forEach(it => subQty += (Number(it.qty) || 0));
 
-            const uniqueStatuses = [...new Set(g.items.map(it => it.audit_status || 'Not Audited'))];
-            const isHomogeneousStatus = uniqueStatuses.length === 1;
-            const groupAuditStatusText = isHomogeneousStatus ? uniqueStatuses[0] : uniqueStatuses.join(' / ');
-
             const assignedAuditors = [...new Set(g.items.map(it => it.auditor).filter(a => a && a !== 'Not Assigned'))];
             const groupAuditorText = assignedAuditors.length > 0 ? assignedAuditors.join(' / ') : 'Not Assigned';
             const isHomogeneousAuditor = assignedAuditors.length <= 1;
+
+            const assignedExf = [...new Set(g.items.map(it => it.exf_date).filter(Boolean))];
+            const groupExfText = assignedExf.length > 0 ? assignedExf.join(' / ') : '';
 
             msg += `*GROUP #${gIdx + 1}:*\n`;
             msg += `*Finish Name:* ${g.finish}\n`;
@@ -546,8 +596,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (g.customer && g.customer !== '---') {
                 msg += `*Buyer:* ${g.customer}\n`;
             }
-            msg += `*Auditor:* ${groupAuditorText}\n`;
-            msg += `*Audit Status:* ${groupAuditStatusText}\n`;
+            if (groupAuditorText && groupAuditorText !== 'Not Assigned') {
+                msg += `*Auditor:* ${groupAuditorText}\n`;
+            }
+            if (groupExfText) {
+                msg += `*EXF Date:* ${groupExfText}\n`;
+            }
             msg += `*Remarks:* ${finalRemarks}\n`;
             msg += `*JOBS & PO BREAKDOWN:*\n`;
             g.items.forEach((item, idx) => {
@@ -556,9 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let extraNotes = [];
                 if (!isHomogeneousAuditor && item.auditor && item.auditor !== 'Not Assigned') {
                     extraNotes.push(`Auditor: ${item.auditor}`);
-                }
-                if (!isHomogeneousStatus && item.audit_status) {
-                    extraNotes.push(`Audit: ${item.audit_status}`);
                 }
                 const extra = extraNotes.length > 0 ? ` (${extraNotes.join(' | ')})` : '';
                 msg += `  ${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${extra}\n`;
@@ -609,18 +660,19 @@ document.addEventListener('DOMContentLoaded', () => {
                    `*Finish Name:* ---\n` +
                    `*QTY:* ---\n` +
                    `*Auditor:* Not Assigned\n` +
-                   `*Audit Status:* Not Audited\n` +
+                   `*EXF Date:* ---\n` +
                    `*Remarks:* Ready For Audit\n` +
                    `-------------------------------------\n` +
                    `_Job number search karein ya type karein._`;
         }
 
-        const auditStatus = getJobAuditStatus(currentJob);
         const auditor = getJobAuditor(currentJob);
+        const exfDate = currentJob.exf_date || getJobSchedField(currentJob, 'exf_date') || '';
         const userEntered = inputRemarks ? inputRemarks.value.trim() : '';
         const remarksText = userEntered || 'Ready For Audit';
         const formattedQty = currentJob.qty ? Number(currentJob.qty).toLocaleString() : '---';
         const auditorVal = (auditor && auditor !== 'Not Assigned') ? auditor : 'Not Assigned';
+        const exfLine = exfDate ? `*EXF Date:* ${exfDate}\n` : `*EXF Date:* ---\n`;
 
         return `*📦 CLOSED PACKING LISTS UPDATE*\n` +
                `-------------------------------------\n` +
@@ -630,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
                `*Finish Name:* ${currentJob.finish || '---'}\n` +
                `*QTY:* ${formattedQty}\n` +
                `*Auditor:* ${auditorVal}\n` +
-               `*Audit Status:* ${auditStatus}\n` +
+               exfLine +
                `*Remarks:* ${remarksText}\n` +
                `-------------------------------------`;
     }
@@ -663,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayAuditorBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-md ${aStyle.badgeClass}`;
         }
 
-        // Audit Status Display
+        // Audit Status Display (On Screen Only)
         const auditStatus = getJobAuditStatus(jobItem);
         if (displayAudit) {
             displayAudit.textContent = auditStatus;
@@ -671,8 +723,55 @@ document.addEventListener('DOMContentLoaded', () => {
         if (displayAuditBadge) {
             displayAuditBadge.textContent = auditStatus;
             const bStyle = getAuditBadgeStyle(auditStatus);
-            displayAuditBadge.className = `text-[10px] font-black px-2.5 py-0.5 rounded-md ${bStyle.badgeClass}`;
+            displayAuditBadge.className = `text-[9px] font-black px-1.5 py-0.5 rounded-md ${bStyle.badgeClass}`;
         }
+
+        // Schedule & Planning Fields
+        const exf = jobItem.exf_date || getJobSchedField(jobItem, 'exf_date');
+        if (displayExfDate) displayExfDate.textContent = exf || '-';
+
+        const dest = jobItem.destination || getJobSchedField(jobItem, 'destination');
+        if (displayDestination) displayDestination.textContent = dest || '-';
+
+        const rAudit = jobItem.ready_audit_plan || getJobSchedField(jobItem, 'ready_audit_plan');
+        if (displayReadyAudit) displayReadyAudit.textContent = rAudit || '-';
+
+        const aPrep = jobItem.audit_prepared_by || getJobSchedField(jobItem, 'audit_prepared_by');
+        if (displayAuditPrepared) displayAuditPrepared.textContent = aPrep || '-';
+
+        const plPos = jobItem.pl_position || getJobSchedField(jobItem, 'pl_position');
+        if (displayPlPosition) displayPlPosition.textContent = plPos || '-';
+
+        const act = jobItem.action || getJobSchedField(jobItem, 'action');
+        if (displayAction) displayAction.textContent = act || '-';
+        if (displayActionBadge) displayActionBadge.textContent = act ? `Action: ${act}` : 'Action: -';
+
+        const emailRem = jobItem.remarks_emails || getJobSchedField(jobItem, 'remarks_emails');
+        if (displayRemarksEmails) displayRemarksEmails.textContent = emailRem || 'None';
+        if (rowRemarksEmails) {
+            if (emailRem && emailRem !== 'None') {
+                rowRemarksEmails.classList.remove('opacity-60');
+            } else {
+                rowRemarksEmails.classList.add('opacity-60');
+            }
+        }
+
+        // Packing Breakdown Fields
+        const packVal = jobItem.pack || getJobSchedField(jobItem, 'pack');
+        if (displayPack) displayPack.textContent = packVal || '-';
+        if (displayPackBadge) displayPackBadge.textContent = packVal ? `Pack: ${packVal}` : 'Pack: -';
+
+        const dpcsVal = jobItem.dpcs || getJobSchedField(jobItem, 'dpcs');
+        if (displayDpcs) displayDpcs.textContent = (dpcsVal && !isNaN(dpcsVal)) ? Number(dpcsVal).toLocaleString() + ' pcs' : (dpcsVal || '-');
+
+        const dctnsVal = jobItem.d_ctns || getJobSchedField(jobItem, 'd_ctns');
+        if (displayDctns) displayDctns.textContent = (dctnsVal && !isNaN(dctnsVal)) ? Number(dctnsVal).toLocaleString() + ' ctns' : (dctnsVal || '-');
+
+        const lPcsVal = jobItem.loose_pcs || getJobSchedField(jobItem, 'loose_pcs');
+        if (displayLoosePcs) displayLoosePcs.textContent = (lPcsVal && !isNaN(lPcsVal)) ? Number(lPcsVal).toLocaleString() + ' pcs' : (lPcsVal || '-');
+
+        const lCtnsVal = jobItem.loose_ctns || getJobSchedField(jobItem, 'loose_ctns');
+        if (displayLooseCtns) displayLooseCtns.textContent = (lCtnsVal && !isNaN(lCtnsVal)) ? Number(lCtnsVal).toLocaleString() + ' ctns' : (lCtnsVal || '-');
 
         if (inputRemarks) {
             inputRemarks.placeholder = 'Remarks (Default: Ready For Audit, or type custom)...';
@@ -1104,6 +1203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     audit: found.audit || '',
                     audit_status: auditStatus,
                     auditor: auditor,
+                    exf_date: found.exf_date || getJobSchedField(found, 'exf_date'),
                     fromDump: true
                 });
             } else {
@@ -1252,8 +1352,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (displayAudit) displayAudit.textContent = 'Not Audited';
             if (displayAuditBadge) {
                 displayAuditBadge.textContent = 'Not Audited';
-                displayAuditBadge.className = 'text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300';
+                displayAuditBadge.className = 'text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300';
             }
+            if (displayExfDate) displayExfDate.textContent = '-';
+            if (displayDestination) displayDestination.textContent = '-';
+            if (displayReadyAudit) displayReadyAudit.textContent = '-';
+            if (displayAuditPrepared) displayAuditPrepared.textContent = '-';
+            if (displayPlPosition) displayPlPosition.textContent = '-';
+            if (displayAction) displayAction.textContent = '-';
+            if (displayActionBadge) displayActionBadge.textContent = 'Action: -';
+            if (displayRemarksEmails) displayRemarksEmails.textContent = '-';
+            if (displayPack) displayPack.textContent = '-';
+            if (displayPackBadge) displayPackBadge.textContent = 'Pack: -';
+            if (displayDpcs) displayDpcs.textContent = '-';
+            if (displayDctns) displayDctns.textContent = '-';
+            if (displayLoosePcs) displayLoosePcs.textContent = '-';
+            if (displayLooseCtns) displayLooseCtns.textContent = '-';
             inputRemarks.value = '';
             inputRemarks.placeholder = 'Remarks (Default: Ready For Audit, or type custom)...';
             if (activeJobIndicator) {

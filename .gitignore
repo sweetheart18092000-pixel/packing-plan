@@ -7,3 +7,4 @@ cf_log.txt
 watcher.log
 cloudflared.exe
 *.xlsm
+backup_v1_working/

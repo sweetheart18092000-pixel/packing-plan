@@ -5,7 +5,7 @@ import json
 import zipfile
 import subprocess
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 DUMP_FILE = os.path.join(PROJECT_DIR, "Dump.xlsx")
@@ -41,11 +41,30 @@ def parse_nqa_datetime(dt_val):
             pass
     return datetime.min
 
+def format_excel_date(val):
+    if not val or str(val).strip().lower() in ('nan', 'none', '-', '0', ''):
+        return ''
+    val_str = str(val).strip()
+    try:
+        f_val = float(val_str)
+        if 30000 < f_val < 60000:
+            dt = datetime(1899, 12, 30) + timedelta(days=f_val)
+            return dt.strftime('%d-%b-%Y')
+    except Exception:
+        pass
+    return val_str
+
+def clean_val(v):
+    if v is None:
+        return ''
+    s = str(v).strip()
+    if s.lower() in ('nan', 'none', 'null', '#n/a', '#value!'):
+        return ''
+    return s
+
 def load_nqa_audits():
     if not os.path.exists(NQA_FILE):
         return {}
-    
-    # Retry up to 3 times in case WhatsApp Bot is currently writing to the file
     for attempt in range(1, 4):
         try:
             import openpyxl
@@ -79,14 +98,14 @@ def load_nqa_audits():
             if attempt < 3:
                 time.sleep(1.0)
             else:
-                log(f"[WARNING] Error reading NQA audits after 3 attempts: {e}")
+                log(f"[WARNING] Error reading NQA audits: {e}")
                 return {}
     return {}
 
-def load_schedule_auditors():
+def load_schedule_full():
     target_path = SCHEDULE_FILE if os.path.exists(SCHEDULE_FILE) else (SCHEDULE_FALLBACK if os.path.exists(SCHEDULE_FALLBACK) else None)
     if not target_path:
-        return {}
+        return {}, {}
 
     for attempt in range(1, 4):
         try:
@@ -114,61 +133,100 @@ def load_schedule_auditors():
                     break
 
             if not sheet_target:
-                return {}
+                return {}, {}
 
             sheet_path = 'xl/' + sheet_target.lstrip('/')
             sheet_tree = ET.fromstring(zf.read(sheet_path))
 
-            auditor_map = {}
+            cols_map = {
+                'Q': 'job',
+                'K': 'exf_date',
+                'M': 'audit_prepared_by',
+                'J': 'ready_audit_plan',
+                'N': 'action',
+                'O': 'remarks_emails',
+                'D': 'pl_position',
+                'U': 'pack',
+                'X': 'destination',
+                'AE': 'dpcs',
+                'AG': 'd_ctns',
+                'AH': 'loose_pcs',
+                'AI': 'loose_ctns',
+                'BE': 'auditor'
+            }
+
+            full_map = {}
+            auds_map = {}
+
             for row in sheet_tree.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row'):
                 if int(row.attrib.get('r', 0)) < 17:
                     continue
-                job_val, auditor_val = None, None
+                row_dict = {}
                 for c in row.findall('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}c'):
                     col = ''.join([ch for ch in c.attrib.get('r', '') if ch.isalpha()])
-                    t = c.attrib.get('t', '')
-                    v = c.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v')
-                    val = None
-                    if v is not None and v.text:
-                        val = shared_strings[int(v.text)] if t == 's' else v.text
-                    if col == 'Q':
-                        job_val = val
-                    elif col == 'BE':
-                        auditor_val = val
+                    if col in cols_map:
+                        t = c.attrib.get('t', '')
+                        v = c.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v')
+                        val = None
+                        if v is not None and v.text:
+                            val = shared_strings[int(v.text)] if t == 's' else v.text
+                        row_dict[cols_map[col]] = val
 
-                if job_val:
-                    j_str = str(job_val).strip().upper()
-                    if not j_str.startswith('J'):
-                        if j_str.isdigit():
-                            j_str = 'J' + j_str
-                        else:
-                            continue
-                    if auditor_val:
-                        a_str = str(auditor_val).strip()
-                        if a_str.lower() in ('nan', 'none', '-', '0', 'audior', 'auditors') or a_str.isdigit():
-                            continue
-                        if a_str.lower() == 'qmp':
-                            clean_aud = 'QMP'
-                        elif a_str.lower() == 'aadil':
-                            clean_aud = 'Aadil'
-                        elif 'aadil' in a_str.lower() and 'qmp' in a_str.lower():
-                            clean_aud = 'Aadil + QMP'
-                        else:
-                            clean_aud = a_str
-                        auditor_map[j_str] = clean_aud
-                        clean_no_j = j_str.replace('J', '')
-                        if clean_no_j:
-                            auditor_map[clean_no_j] = clean_aud
+                job_raw = row_dict.get('job')
+                if not job_raw:
+                    continue
+                j_str = str(job_raw).strip().upper()
+                if not j_str.startswith('J'):
+                    if j_str.isdigit():
+                        j_str = 'J' + j_str
+                    else:
+                        continue
+
+                raw_aud = clean_val(row_dict.get('auditor'))
+                if raw_aud.lower() in ('0', '-', 'audior', 'auditors') or raw_aud.isdigit():
+                    raw_aud = ''
+                elif raw_aud.lower() == 'qmp':
+                    raw_aud = 'QMP'
+                elif raw_aud.lower() == 'aadil':
+                    raw_aud = 'Aadil'
+                elif 'aadil' in raw_aud.lower() and 'qmp' in raw_aud.lower():
+                    raw_aud = 'Aadil + QMP'
+
+                rec = {
+                    'auditor': raw_aud,
+                    'exf_date': format_excel_date(clean_val(row_dict.get('exf_date'))),
+                    'audit_prepared_by': clean_val(row_dict.get('audit_prepared_by')),
+                    'ready_audit_plan': format_excel_date(clean_val(row_dict.get('ready_audit_plan'))),
+                    'action': clean_val(row_dict.get('action')),
+                    'remarks_emails': clean_val(row_dict.get('remarks_emails')),
+                    'pl_position': clean_val(row_dict.get('pl_position')),
+                    'pack': clean_val(row_dict.get('pack')),
+                    'destination': clean_val(row_dict.get('destination')),
+                    'dpcs': clean_val(row_dict.get('dpcs')),
+                    'd_ctns': clean_val(row_dict.get('d_ctns')),
+                    'loose_pcs': clean_val(row_dict.get('loose_pcs')),
+                    'loose_ctns': clean_val(row_dict.get('loose_ctns'))
+                }
+
+                clean_no_j = j_str.replace('J', '')
+                full_map[j_str] = rec
+                if clean_no_j:
+                    full_map[clean_no_j] = rec
+
+                if raw_aud:
+                    auds_map[j_str] = raw_aud
+                    if clean_no_j:
+                        auds_map[clean_no_j] = raw_aud
 
             zf.close()
-            return auditor_map
+            return full_map, auds_map
         except Exception as e:
             if attempt < 3:
                 time.sleep(1.0)
             else:
-                log(f"[WARNING] Error reading schedule auditors after 3 attempts: {e}")
-                return {}
-    return {}
+                log(f"[WARNING] Error reading schedule details: {e}")
+                return {}, {}
+    return {}, {}
 
 def sync_dump_to_git():
     log("=" * 60)
@@ -178,17 +236,18 @@ def sync_dump_to_git():
     try:
         time.sleep(1.0)
         nqa_dict = load_nqa_audits()
-        auditor_dict = load_schedule_auditors()
+        schedule_dict, auditor_dict = load_schedule_full()
 
         with open(AUDIT_JS, "w", encoding="utf-8") as f:
             f.write(f"window.AUDIT_DATA = {json.dumps(nqa_dict, ensure_ascii=False)};\n")
             f.write(f"window.AUDITOR_DATA = {json.dumps(auditor_dict, ensure_ascii=False)};\n")
-        log(f"audit_data.js updated with {len(nqa_dict):,} audits & {len(auditor_dict)//2 if auditor_dict else 0:,} auditors.")
+            f.write(f"window.SCHEDULE_DATA = {json.dumps(schedule_dict, ensure_ascii=False)};\n")
+        log(f"audit_data.js updated with {len(nqa_dict):,} audits & {len(schedule_dict)//2:,} schedule jobs.")
 
         import pandas as pd
         df = pd.read_excel(DUMP_FILE)
         jobs = []
-        stats = {'nqa': 0, 'dump': 0, 'none': 0, 'auditor': 0}
+        stats = {'nqa': 0, 'dump': 0, 'none': 0, 'sched': 0}
 
         for _, row in df.iterrows():
             job_val = str(row.get('JOB #', '') or '').strip()
@@ -217,9 +276,9 @@ def sync_dump_to_git():
             else:
                 stats['none'] += 1
 
-            job_auditor = auditor_dict.get(j_key) or auditor_dict.get(clean_j) or ''
-            if job_auditor:
-                stats['auditor'] += 1
+            sched_rec = schedule_dict.get(j_key) or schedule_dict.get(clean_j) or {}
+            if sched_rec:
+                stats['sched'] += 1
 
             jobs.append({
                 'job': job_val,
@@ -232,16 +291,27 @@ def sync_dump_to_git():
                 'audit': dump_audit,
                 'audit_status': resolved_status,
                 'audit_source': audit_source,
-                'auditor': job_auditor
+                'auditor': sched_rec.get('auditor', ''),
+                'exf_date': sched_rec.get('exf_date', ''),
+                'audit_prepared_by': sched_rec.get('audit_prepared_by', ''),
+                'ready_audit_plan': sched_rec.get('ready_audit_plan', ''),
+                'action': sched_rec.get('action', ''),
+                'remarks_emails': sched_rec.get('remarks_emails', ''),
+                'pl_position': sched_rec.get('pl_position', ''),
+                'pack': sched_rec.get('pack', ''),
+                'destination': sched_rec.get('destination', ''),
+                'dpcs': sched_rec.get('dpcs', ''),
+                'd_ctns': sched_rec.get('d_ctns', ''),
+                'loose_pcs': sched_rec.get('loose_pcs', ''),
+                'loose_ctns': sched_rec.get('loose_ctns', '')
             })
 
         js_content = f"window.DUMP_JOBS = {json.dumps(jobs, ensure_ascii=False)};\nwindow.JOBS_DATA = window.DUMP_JOBS;\n"
         with open(JOBS_JS, "w", encoding="utf-8") as f:
             f.write(js_content)
 
-        log(f"Parsed {len(jobs):,} jobs (NQA: {stats['nqa']}, Dump: {stats['dump']}, Not Audited: {stats['none']}, Auditors: {stats['auditor']}).")
+        log(f"Parsed {len(jobs):,} jobs (NQA: {stats['nqa']}, Dump: {stats['dump']}, Schedule Matched: {stats['sched']}).")
 
-        # Git operations (Runs 100% silently with CREATE_NO_WINDOW so no black cmd windows pop up)
         no_window_flag = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         os.chdir(PROJECT_DIR)
         subprocess.run(["git", "config", "http.postBuffer", "524288000"], check=True, creationflags=no_window_flag)
@@ -250,7 +320,7 @@ def sync_dump_to_git():
         
         diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], creationflags=no_window_flag)
         if diff_check.returncode != 0:
-            commit_msg = f"Auto-sync Dump, Audits & Auditors: {time.strftime('%Y-%m-%d %H:%M')} ({len(jobs):,} jobs)"
+            commit_msg = f"Auto-sync Schedule & Dump: {time.strftime('%Y-%m-%d %H:%M')} ({len(jobs):,} jobs)"
             subprocess.run(["git", "commit", "-m", commit_msg], check=True, creationflags=no_window_flag)
             
             pushed = False
@@ -275,7 +345,7 @@ def sync_dump_to_git():
 
 def watch_loop():
     log("=" * 65)
-    log("  PACKING PLAN - REAL-TIME DUMP, AUDITS & AUDITORS WATCHER ACTIVE")
+    log("  PACKING PLAN - REAL-TIME DUMP, AUDITS & FULL SCHEDULE WATCHER")
     log("=" * 65)
     log(f"Watching Dump:     {DUMP_FILE}")
     log(f"Watching Audits:   {NQA_FILE}")
