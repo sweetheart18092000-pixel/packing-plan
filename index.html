@@ -312,8 +312,20 @@
               <span id="display-finish" class="text-xs font-black text-slate-900 block truncate select-all">-</span>
             </div>
 
-            <!-- Audit Status (Full Width) -->
-            <div id="display-audit-card" class="col-span-2 bg-slate-50/80 p-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
+            <!-- Auditor (Col 1) -->
+            <div id="display-auditor-card" class="bg-slate-50/80 p-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
+              <div>
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                  <i data-lucide="user-check" class="w-3 h-3 text-indigo-600"></i>
+                  Auditor
+                </span>
+                <span id="display-auditor" class="text-xs sm:text-sm font-black text-slate-800 block truncate select-all">Not Assigned</span>
+              </div>
+              <span id="display-auditor-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">Schedule</span>
+            </div>
+
+            <!-- Audit Status (Col 2) -->
+            <div id="display-audit-card" class="bg-slate-50/80 p-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
               <div>
                 <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
                   <i data-lucide="shield-check" class="w-3 h-3 text-emerald-600"></i>
@@ -321,7 +333,7 @@
                 </span>
                 <span id="display-audit" class="text-xs font-black text-slate-800 block truncate select-all">Not Audited</span>
               </div>
-              <span id="display-audit-badge" class="text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300">Not Audited</span>
+              <span id="display-audit-badge" class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300">Not Audited</span>
             </div>
 
           </div>

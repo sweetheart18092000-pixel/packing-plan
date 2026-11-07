@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayStyle = document.getElementById('display-style');
     const displayCustomer = document.getElementById('display-customer');
     const displayFinish = document.getElementById('display-finish');
+    const displayAuditor = document.getElementById('display-auditor');
+    const displayAuditorBadge = document.getElementById('display-auditor-badge');
+    const displayAuditorCard = document.getElementById('display-auditor-card');
     const displayAudit = document.getElementById('display-audit');
     const displayAuditBadge = document.getElementById('display-audit-badge');
     const displayAuditCard = document.getElementById('display-audit-card');
@@ -389,7 +392,69 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Smart Format for Multi & Bulk Jobs: Consolidate repeated Style, Finish, Buyer & Remarks
+    // Helper to get Assigned Auditor from Packing_Finishing_Shipment_Schedule.xlsm
+    function getJobAuditor(jobOrItem) {
+        if (!jobOrItem) return 'Not Assigned';
+
+        let jobNum = '';
+        let embeddedAuditor = '';
+
+        if (typeof jobOrItem === 'string') {
+            jobNum = jobOrItem.trim().toUpperCase();
+        } else if (typeof jobOrItem === 'object') {
+            jobNum = String(jobOrItem.job || '').trim().toUpperCase();
+            embeddedAuditor = String(jobOrItem.auditor || '').trim();
+        }
+
+        const cleanJob = jobNum.replace(/^J/i, '');
+
+        // 1. Check window.AUDITOR_DATA (loaded from audit_data.js)
+        if (typeof window.AUDITOR_DATA === 'object' && window.AUDITOR_DATA !== null) {
+            if (window.AUDITOR_DATA[jobNum]) return window.AUDITOR_DATA[jobNum];
+            if (cleanJob && window.AUDITOR_DATA['J' + cleanJob]) return window.AUDITOR_DATA['J' + cleanJob];
+            if (cleanJob && window.AUDITOR_DATA[cleanJob]) return window.AUDITOR_DATA[cleanJob];
+        }
+
+        // 2. Check localStorage
+        try {
+            const localAuditors = JSON.parse(localStorage.getItem('PACKING_AUDITOR_DATA') || '{}');
+            if (localAuditors[jobNum]) return localAuditors[jobNum];
+            if (cleanJob && localAuditors['J' + cleanJob]) return localAuditors['J' + cleanJob];
+            if (cleanJob && localAuditors[cleanJob]) return localAuditors[cleanJob];
+        } catch (e) {}
+
+        // 3. Embedded in job item
+        if (embeddedAuditor && embeddedAuditor.toLowerCase() !== 'nan' && embeddedAuditor.toLowerCase() !== 'none' && embeddedAuditor !== 'Not Assigned') {
+            return embeddedAuditor;
+        }
+
+        // 4. Lookup from jobsDataset
+        const found = jobsDataset.find(j => {
+            const jNum = String(j.job || '').toUpperCase();
+            return jNum === jobNum || jNum.replace(/^J/i, '') === cleanJob;
+        });
+        if (found && found.auditor && found.auditor.toLowerCase() !== 'nan' && found.auditor !== 'Not Assigned') {
+            return found.auditor;
+        }
+
+        return 'Not Assigned';
+    }
+
+    function getAuditorBadgeStyle(auditor) {
+        const a = String(auditor || '').toLowerCase();
+        if (a && a !== 'not assigned' && a !== '---' && a !== '-') {
+            return {
+                badgeClass: 'bg-indigo-100 text-indigo-800 border border-indigo-300 font-bold',
+                textClass: 'text-indigo-800 font-black'
+            };
+        }
+        return {
+            badgeClass: 'bg-slate-100 text-slate-600 border border-slate-300 font-medium',
+            textClass: 'text-slate-500 font-medium'
+        };
+    }
+
+    // Smart Format for Multi & Bulk Jobs: Consolidate repeated Style, Finish, Buyer, Auditor & Remarks
     function formatSmartJobsReport(jobs, customRemarks = '') {
         if (!jobs || jobs.length === 0) return '';
         let totalQty = 0;
@@ -408,9 +473,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
             const st = j.audit_status || getJobAuditStatus(j);
+            const aud = j.auditor || getJobAuditor(j);
             groups[key].items.push({
                 ...j,
-                audit_status: st
+                audit_status: st,
+                auditor: aud
             });
         });
 
@@ -442,13 +509,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const g = groups[groupKeys[0]];
             const rem = getGroupRemarks(g.items);
             const uniqueStatuses = [...new Set(g.items.map(it => it.audit_status))];
-            const isHomogeneous = uniqueStatuses.length === 1;
+            const isHomogeneousStatus = uniqueStatuses.length === 1;
+
+            const assignedAuditors = [...new Set(g.items.map(it => it.auditor).filter(a => a && a !== 'Not Assigned'))];
+            const groupAuditorText = assignedAuditors.length > 0 ? assignedAuditors.join(' / ') : 'Not Assigned';
+            const isHomogeneousAuditor = assignedAuditors.length <= 1;
 
             let msg = `*📦 CLOSED PACKING LISTS UPDATE (${jobs.length} JOBS)*\n`;
             msg += `*Finish Name:* ${g.finish}\n`;
             msg += `*Style:* ${g.style}\n`;
             if (g.customer && g.customer !== '---') {
                 msg += `*Buyer:* ${g.customer}\n`;
+            }
+            if (groupAuditorText && groupAuditorText !== 'Not Assigned') {
+                msg += `*Auditor:* ${groupAuditorText}\n`;
             }
             if (rem) {
                 msg += `*Remarks:* ${rem}\n`;
@@ -458,9 +532,15 @@ document.addEventListener('DOMContentLoaded', () => {
             g.items.forEach((item, idx) => {
                 const q = Number(item.qty) || 0;
                 const qStr = q > 0 ? q.toLocaleString() : '---';
-                // If jobs in this group have different audit statuses, show each job's status
-                const itemRem = !isHomogeneous ? ` (${item.audit_status})` : '';
-                msg += `${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${itemRem}\n`;
+                let extraNotes = [];
+                if (!isHomogeneousAuditor && item.auditor && item.auditor !== 'Not Assigned') {
+                    extraNotes.push(`Auditor: ${item.auditor}`);
+                }
+                if (!isHomogeneousStatus && item.audit_status) {
+                    extraNotes.push(item.audit_status);
+                }
+                const extra = extraNotes.length > 0 ? ` (${extraNotes.join(' | ')})` : '';
+                msg += `${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${extra}\n`;
             });
             msg += `-------------------------------------\n`;
             msg += `*Total Jobs:* ${jobs.length} | *Total QTY:* ${totalQty.toLocaleString()} pcs`;
@@ -476,13 +556,20 @@ document.addEventListener('DOMContentLoaded', () => {
             g.items.forEach(it => subQty += (Number(it.qty) || 0));
             const rem = getGroupRemarks(g.items);
             const uniqueStatuses = [...new Set(g.items.map(it => it.audit_status))];
-            const isHomogeneous = uniqueStatuses.length === 1;
+            const isHomogeneousStatus = uniqueStatuses.length === 1;
+
+            const assignedAuditors = [...new Set(g.items.map(it => it.auditor).filter(a => a && a !== 'Not Assigned'))];
+            const groupAuditorText = assignedAuditors.length > 0 ? assignedAuditors.join(' / ') : '';
+            const isHomogeneousAuditor = assignedAuditors.length <= 1;
 
             msg += `*GROUP #${gIdx + 1}:*\n`;
             msg += `*Finish Name:* ${g.finish}\n`;
             msg += `*Style:* ${g.style}\n`;
             if (g.customer && g.customer !== '---') {
                 msg += `*Buyer:* ${g.customer}\n`;
+            }
+            if (groupAuditorText) {
+                msg += `*Auditor:* ${groupAuditorText}\n`;
             }
             if (rem) {
                 msg += `*Remarks:* ${rem}\n`;
@@ -491,8 +578,15 @@ document.addEventListener('DOMContentLoaded', () => {
             g.items.forEach((item, idx) => {
                 const q = Number(item.qty) || 0;
                 const qStr = q > 0 ? q.toLocaleString() : '---';
-                const itemRem = !isHomogeneous ? ` (${item.audit_status})` : '';
-                msg += `  ${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${itemRem}\n`;
+                let extraNotes = [];
+                if (!isHomogeneousAuditor && item.auditor && item.auditor !== 'Not Assigned') {
+                    extraNotes.push(`Auditor: ${item.auditor}`);
+                }
+                if (!isHomogeneousStatus && item.audit_status) {
+                    extraNotes.push(item.audit_status);
+                }
+                const extra = extraNotes.length > 0 ? ` (${extraNotes.join(' | ')})` : '';
+                msg += `  ${idx + 1}. Job: ${item.job} | PO: ${item.po || '---'} | QTY: ${qStr}${extra}\n`;
             });
             if (g.items.length > 1) {
                 msg += `  _Subtotal: ${subQty.toLocaleString()} pcs_\n`;
@@ -539,12 +633,14 @@ document.addEventListener('DOMContentLoaded', () => {
                    `*Style:* ---\n` +
                    `*Finish Name:* ---\n` +
                    `*QTY:* ---\n` +
+                   `*Auditor:* Not Assigned\n` +
                    `*Remarks:* Not Audited\n` +
                    `-------------------------------------\n` +
                    `_Job number search karein ya type karein._`;
         }
 
         const auditStatus = getJobAuditStatus(currentJob);
+        const auditor = getJobAuditor(currentJob);
         const userEntered = inputRemarks.value.trim();
         let remarksText = auditStatus;
 
@@ -556,6 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const formattedQty = currentJob.qty ? Number(currentJob.qty).toLocaleString() : '---';
+        const auditorLine = (auditor && auditor !== 'Not Assigned') ? `*Auditor:* ${auditor}\n` : `*Auditor:* Not Assigned\n`;
 
         return `*📦 CLOSED PACKING LISTS UPDATE*\n` +
                `-------------------------------------\n` +
@@ -564,6 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
                `*Style:* ${currentJob.style || '---'}\n` +
                `*Finish Name:* ${currentJob.finish || '---'}\n` +
                `*QTY:* ${formattedQty}\n` +
+               auditorLine +
                `*Remarks:* ${remarksText}\n` +
                `-------------------------------------`;
     }
@@ -584,6 +682,17 @@ document.addEventListener('DOMContentLoaded', () => {
         displayStyle.textContent = jobItem.style || '---';
         displayCustomer.textContent = jobItem.customer || '---';
         displayFinish.textContent = jobItem.finish || '---';
+
+        // Auditor Display
+        const auditor = getJobAuditor(jobItem);
+        if (displayAuditor) {
+            displayAuditor.textContent = auditor;
+        }
+        if (displayAuditorBadge) {
+            displayAuditorBadge.textContent = auditor === 'Not Assigned' ? 'Unassigned' : auditor;
+            const aStyle = getAuditorBadgeStyle(auditor);
+            displayAuditorBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-md ${aStyle.badgeClass}`;
+        }
 
         // Audit Status Display
         const auditStatus = getJobAuditStatus(jobItem);
@@ -1007,6 +1116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const auditStatus = getJobAuditStatus(found || tok);
+            const auditor = getJobAuditor(found || tok);
             const lowerAudit = auditStatus.toLowerCase();
             if (lowerAudit.includes('fail')) failCount++;
             else if (lowerAudit.includes('pass')) passCount++;
@@ -1024,6 +1134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     customer: found.customer || '',
                     audit: found.audit || '',
                     audit_status: auditStatus,
+                    auditor: auditor,
                     fromDump: true
                 });
             } else {
@@ -1037,6 +1148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     customer: '',
                     audit: '',
                     audit_status: auditStatus,
+                    auditor: auditor,
                     fromDump: false
                 });
             }
@@ -1163,6 +1275,11 @@ document.addEventListener('DOMContentLoaded', () => {
             displayStyle.textContent = '-';
             displayCustomer.textContent = '-';
             displayFinish.textContent = '-';
+            if (displayAuditor) displayAuditor.textContent = 'Not Assigned';
+            if (displayAuditorBadge) {
+                displayAuditorBadge.textContent = 'Schedule';
+                displayAuditorBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200';
+            }
             if (displayAudit) displayAudit.textContent = 'Not Audited';
             if (displayAuditBadge) {
                 displayAuditBadge.textContent = 'Not Audited';
@@ -1189,6 +1306,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const auditStatus = getJobAuditStatus(currentJob);
+            const auditor = getJobAuditor(currentJob);
             const itemToQueue = {
                 job: currentJob.job,
                 po: currentJob.po,
@@ -1198,6 +1316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 customer: currentJob.customer,
                 audit: currentJob.audit || '',
                 audit_status: auditStatus,
+                auditor: auditor,
                 remarks: inputRemarks.value.trim() || auditStatus
             };
 
@@ -1218,6 +1337,10 @@ document.addEventListener('DOMContentLoaded', () => {
             queueItemsList.innerHTML = multiQueue.map((item, idx) => {
                 const st = item.audit_status || getJobAuditStatus(item);
                 const bStyle = getAuditBadgeStyle(st);
+                const aud = item.auditor || getJobAuditor(item);
+                const audBadge = (aud && aud !== 'Not Assigned')
+                    ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">👤 ${aud}</span>`
+                    : '';
                 return `
                 <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs gap-2">
                     <div class="truncate flex-1">
@@ -1226,6 +1349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="font-semibold text-emerald-700">${item.qty ? Number(item.qty).toLocaleString() : '0'} pcs</span>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
+                        ${audBadge}
                         <span class="text-[10px] font-black px-2 py-0.5 rounded ${bStyle.badgeClass}">
                             ${st}
                         </span>
@@ -1476,6 +1600,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = new Uint8Array(evt.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
 
+                    // Check if uploaded file is Packing Schedule ('Audit Plan' sheet)
+                    const isSchedule = workbook.SheetNames.some(s => s.trim().toLowerCase() === 'audit plan') || file.name.toLowerCase().includes('schedule');
+                    if (isSchedule) {
+                        const targetSheet = workbook.SheetNames.find(s => s.trim().toLowerCase() === 'audit plan') || workbook.SheetNames[0];
+                        const ws = workbook.Sheets[targetSheet];
+                        const schedRows = XLSX.utils.sheet_to_json(ws, { range: 15, defval: '' });
+
+                        if (!window.AUDITOR_DATA) window.AUDITOR_DATA = {};
+                        let loadedCount = 0;
+                        schedRows.forEach(r => {
+                            const jVal = String(r['JOBS#'] || r['Job'] || r['JOB #'] || '').trim().toUpperCase();
+                            const aVal = String(r['Auditors '] || r['Auditors'] || r['Auditor'] || '').trim();
+                            if (jVal && jVal.startsWith('J') && aVal && !aVal.match(/^\d+$/) && !['nan', 'none', '-', '0', 'audior'].includes(aVal.toLowerCase())) {
+                                let cleanAud = aVal;
+                                if (cleanAud.toLowerCase() === 'qmp') cleanAud = 'QMP';
+                                else if (cleanAud.toLowerCase() === 'aadil') cleanAud = 'Aadil';
+                                else if (cleanAud.toLowerCase().includes('aadil') && cleanAud.toLowerCase().includes('qmp')) cleanAud = 'Aadil + QMP';
+                                window.AUDITOR_DATA[jVal] = cleanAud;
+                                const cleanNoJ = jVal.replace(/^J/i, '');
+                                if (cleanNoJ) window.AUDITOR_DATA[cleanNoJ] = cleanAud;
+                                loadedCount++;
+                            }
+                        });
+                        try {
+                            localStorage.setItem('PACKING_AUDITOR_DATA', JSON.stringify(window.AUDITOR_DATA));
+                        } catch (e) {}
+
+                        if (currentJob) selectJob(currentJob);
+                        if (reportMode === 'bulk') handleBulkCompile();
+                        else updatePreview();
+
+                        showToast(`🎉 Schedule Loaded: ${loadedCount.toLocaleString()} Auditors from ${file.name}!`);
+                        return;
+                    }
+
                     // Check if uploaded file is NQA Final Audit Reports
                     if (workbook.SheetNames.includes('Audit Details') || file.name.toLowerCase().includes('audit')) {
                         const targetSheet = workbook.SheetNames.includes('Audit Details') ? 'Audit Details' : workbook.SheetNames[0];
@@ -1683,6 +1842,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (reportMode === 'multi' && multiQueue.length > 0) {
             multiQueue.forEach(item => {
                 const auditStatus = item.audit_status || getJobAuditStatus(item);
+                const auditor = item.auditor || getJobAuditor(item);
                 logs.unshift({
                     id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                     timestamp: now.toISOString(),
@@ -1695,6 +1855,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     finish: item.finish || '',
                     qty: Number(item.qty || 0),
                     customer: item.customer || '',
+                    auditor: auditor,
                     audit_status: auditStatus,
                     remarks: item.remarks || auditStatus
                 });
@@ -1702,6 +1863,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } else if (currentJob) {
             const auditStatus = getJobAuditStatus(currentJob);
+            const auditor = getJobAuditor(currentJob);
             const userRem = inputRemarks.value.trim();
             const finalRemarks = userRem ? `${auditStatus} - ${userRem}` : auditStatus;
 
@@ -1717,6 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 finish: currentJob.finish || '',
                 qty: Number(currentJob.qty || 0),
                 customer: currentJob.customer || '',
+                auditor: auditor,
                 audit_status: auditStatus,
                 remarks: finalRemarks
             });
@@ -2037,6 +2200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 "Finish Name": row.finish,
                 "Order QTY": row.qty,
                 "Buyer": row.customer,
+                "Auditor": row.auditor || getJobAuditor(row.job),
                 "Audit Status": row.audit_status || getJobAuditStatus(row.job),
                 "Remarks": row.remarks
             }));

@@ -6,3 +6,4 @@ dist/
 cf_log.txt
 watcher.log
 cloudflared.exe
+*.xlsm
