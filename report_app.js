@@ -786,7 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
         suggestionsBox.classList.add('hidden');
 
         updatePreview();
-        showToast(`✅ Job #${jobItem.job} Loaded! (${auditStatus})`);
+        // Notification suppressed per user request
 
         // Mobile UX: brief gentle scroll to preview or remarks
         if (window.innerWidth < 640) {
@@ -1381,27 +1381,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Toggle Extra Planning & Carton Details (Keeps screen compact on mobile)
-    const btnToggleExtraDetails = document.getElementById("btn-toggle-extra-details");
-    const extraDetailsContent = document.getElementById("extra-details-content");
-    const toggleExtraText = document.getElementById("toggle-extra-text");
-    const toggleExtraIcon = document.getElementById("toggle-extra-icon");
+    window.toggleExtraDetails = function() {
+        const content = document.getElementById("extra-details-content");
+        const text = document.getElementById("toggle-extra-text");
+        const icon = document.getElementById("toggle-extra-icon");
+        if (!content) return;
+        const isHidden = content.classList.contains("hidden");
+        if (isHidden) {
+            content.classList.remove("hidden");
+            if (text) text.textContent = "Hide Details";
+            if (icon) icon.classList.add("rotate-180");
+        } else {
+            content.classList.add("hidden");
+            if (text) text.textContent = "Show (10 Details)";
+            if (icon) icon.classList.remove("rotate-180");
+        }
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    };
 
-    if (btnToggleExtraDetails && extraDetailsContent) {
-        btnToggleExtraDetails.addEventListener("click", () => {
-            const isHidden = extraDetailsContent.classList.contains("hidden");
-            if (isHidden) {
-                extraDetailsContent.classList.remove("hidden");
-                if (toggleExtraText) toggleExtraText.textContent = "Hide Details";
-                if (toggleExtraIcon) toggleExtraIcon.classList.add("rotate-180");
-            } else {
-                extraDetailsContent.classList.add("hidden");
-                if (toggleExtraText) toggleExtraText.textContent = "Show (10 Details)";
-                if (toggleExtraIcon) toggleExtraIcon.classList.remove("rotate-180");
-            }
-            if (window.lucide && typeof window.lucide.createIcons === "function") {
-                window.lucide.createIcons();
-            }
-        });
+    const btnToggleExtraDetails = document.getElementById("btn-toggle-extra-details");
+    if (btnToggleExtraDetails) {
+        btnToggleExtraDetails.addEventListener("click", window.toggleExtraDetails);
     }
 
     // Add to Multi-Job Queue
