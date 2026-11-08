@@ -704,26 +704,52 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCustomer.textContent = jobItem.customer || '---';
         displayFinish.textContent = jobItem.finish || '---';
 
-        // Auditor Display
+        // Auditor Display (Color full box cleanly, no inner badge pill)
         const auditor = getJobAuditor(jobItem);
         if (displayAuditor) {
             displayAuditor.textContent = auditor;
         }
+        if (displayAuditorCard) {
+            const a = String(auditor || '').toLowerCase();
+            const audLabel = document.getElementById('display-auditor-label');
+            if (a && a !== 'not assigned' && a !== '---' && a !== '-') {
+                displayAuditorCard.className = 'bg-indigo-50/90 p-1.5 sm:p-2 rounded-xl border border-indigo-200/90 transition-colors';
+                if (displayAuditor) displayAuditor.className = 'text-xs sm:text-sm font-black text-indigo-950 block truncate select-all mt-0.5';
+                if (audLabel) audLabel.className = 'text-[9px] font-bold text-indigo-700 uppercase tracking-wider block flex items-center gap-1';
+            } else {
+                displayAuditorCard.className = 'bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 transition-colors';
+                if (displayAuditor) displayAuditor.className = 'text-xs sm:text-sm font-black text-slate-600 block truncate select-all mt-0.5';
+                if (audLabel) audLabel.className = 'text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1';
+            }
+        }
         if (displayAuditorBadge) {
-            displayAuditorBadge.textContent = auditor === 'Not Assigned' ? 'Unassigned' : auditor;
-            const aStyle = getAuditorBadgeStyle(auditor);
-            displayAuditorBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-md ${aStyle.badgeClass}`;
+            displayAuditorBadge.style.display = 'none';
         }
 
-        // Audit Status Display (On Screen Only)
+        // Audit Status Display (Color full box cleanly, no inner badge pill)
         const auditStatus = getJobAuditStatus(jobItem);
         if (displayAudit) {
             displayAudit.textContent = auditStatus;
         }
+        if (displayAuditCard) {
+            const s = String(auditStatus || '').toLowerCase();
+            const auditLabel = document.getElementById('display-audit-label');
+            if (s.includes('pass') || s.includes('ok')) {
+                displayAuditCard.className = 'bg-emerald-50/95 p-1.5 sm:p-2 rounded-xl border-2 border-emerald-400/90 transition-colors shadow-2xs';
+                if (displayAudit) displayAudit.className = 'text-xs sm:text-sm font-black text-emerald-950 block truncate select-all mt-0.5';
+                if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-emerald-700 uppercase tracking-wider block flex items-center gap-1';
+            } else if (s.includes('fail') || s.includes('reject') || s.includes('hold')) {
+                displayAuditCard.className = 'bg-rose-50/95 p-1.5 sm:p-2 rounded-xl border-2 border-rose-300 transition-colors shadow-2xs';
+                if (displayAudit) displayAudit.className = 'text-xs sm:text-sm font-black text-rose-950 block truncate select-all mt-0.5';
+                if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-rose-700 uppercase tracking-wider block flex items-center gap-1';
+            } else {
+                displayAuditCard.className = 'bg-amber-50/90 p-1.5 sm:p-2 rounded-xl border border-amber-300 transition-colors';
+                if (displayAudit) displayAudit.className = 'text-xs sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5';
+                if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-amber-700 uppercase tracking-wider block flex items-center gap-1';
+            }
+        }
         if (displayAuditBadge) {
-            displayAuditBadge.textContent = auditStatus;
-            const bStyle = getAuditBadgeStyle(auditStatus);
-            displayAuditBadge.className = `text-[9px] font-black px-1.5 py-0.5 rounded-md ${bStyle.badgeClass}`;
+            displayAuditBadge.style.display = 'none';
         }
 
         // Schedule & Planning Fields
@@ -1344,16 +1370,27 @@ document.addEventListener('DOMContentLoaded', () => {
             displayStyle.textContent = '-';
             displayCustomer.textContent = '-';
             displayFinish.textContent = '-';
-            if (displayAuditor) displayAuditor.textContent = 'Not Assigned';
-            if (displayAuditorBadge) {
-                displayAuditorBadge.textContent = 'Schedule';
-                displayAuditorBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200';
+            if (displayAuditor) {
+                displayAuditor.textContent = 'Not Assigned';
+                displayAuditor.className = 'text-xs sm:text-sm font-black text-slate-600 block truncate select-all mt-0.5';
             }
-            if (displayAudit) displayAudit.textContent = 'Not Audited';
-            if (displayAuditBadge) {
-                displayAuditBadge.textContent = 'Not Audited';
-                displayAuditBadge.className = 'text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300';
+            if (displayAuditorCard) {
+                displayAuditorCard.className = 'bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 transition-colors';
             }
+            const audLabel = document.getElementById('display-auditor-label');
+            if (audLabel) audLabel.className = 'text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1';
+            if (displayAuditorBadge) displayAuditorBadge.style.display = 'none';
+
+            if (displayAudit) {
+                displayAudit.textContent = 'Not Audited';
+                displayAudit.className = 'text-xs sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5';
+            }
+            if (displayAuditCard) {
+                displayAuditCard.className = 'bg-amber-50/90 p-1.5 sm:p-2 rounded-xl border border-amber-300 transition-colors';
+            }
+            const auditLabel = document.getElementById('display-audit-label');
+            if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-amber-700 uppercase tracking-wider block flex items-center gap-1';
+            if (displayAuditBadge) displayAuditBadge.style.display = 'none';
             if (displayExfDate) displayExfDate.textContent = '-';
             if (displayDestination) displayDestination.textContent = '-';
             if (displayReadyAudit) displayReadyAudit.textContent = '-';
