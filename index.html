@@ -279,7 +279,7 @@
             <span id="active-job-indicator" class="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">No Job Selected</span>
           </div>
 
-          <!-- Bento Grid: Concise 4-Column on Desktop/Tablet & 2-Column on Mobile -->
+          <!-- Bento Grid: Sleek, compact and identical to clean screenshot -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
             
             <!-- PO Number -->
@@ -312,26 +312,8 @@
               <span id="display-finish" class="text-xs sm:text-sm font-black text-slate-900 block truncate select-all">-</span>
             </div>
 
-            <!-- Destination -->
-            <div class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                <i data-lucide="map-pin" class="w-3 h-3 text-rose-500"></i>
-                Destination
-              </span>
-              <span id="display-destination" class="text-xs sm:text-sm font-bold text-slate-800 block truncate select-all">-</span>
-            </div>
-
-            <!-- EXF Date (Shipment Date) -->
-            <div class="bg-indigo-50/80 p-1.5 sm:p-2 rounded-xl border border-indigo-200/80">
-              <span class="text-[9px] font-bold text-indigo-700 uppercase tracking-wider block flex items-center gap-1">
-                <i data-lucide="calendar" class="w-3 h-3 text-indigo-600"></i>
-                EXF Date
-              </span>
-              <span id="display-exf-date" class="text-xs sm:text-sm font-black text-indigo-900 font-mono block truncate select-all">-</span>
-            </div>
-
-            <!-- Auditor (Col 1) -->
-            <div id="display-auditor-card" class="col-span-1 sm:col-span-2 bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
+            <!-- Auditor (Col 1 on mobile, 1 col on desktop) -->
+            <div id="display-auditor-card" class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
               <div class="min-w-0 pr-1">
                 <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
                   <i data-lucide="user-check" class="w-3 h-3 text-indigo-600"></i>
@@ -342,107 +324,125 @@
               <span id="display-auditor-badge" class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 shrink-0">Schedule</span>
             </div>
 
-            <!-- Audit Status (Col 2 - Screen Only) -->
-            <div id="display-audit-card" class="col-span-1 sm:col-span-2 bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
+            <!-- Audit Status (Col 2 on mobile, 1 col on desktop - Screen Only) -->
+            <div id="display-audit-card" class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
               <div class="min-w-0 pr-1">
                 <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
                   <i data-lucide="shield-check" class="w-3 h-3 text-emerald-600"></i>
-                  Audit Status <span class="text-[8px] font-normal text-slate-400">(Screen Only)</span>
+                  Audit Status <span class="text-[8px] font-normal text-slate-400">(Screen)</span>
                 </span>
                 <span id="display-audit" class="text-xs font-black text-slate-800 block truncate select-all">Not Audited</span>
               </div>
               <span id="display-audit-badge" class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 shrink-0">Not Audited</span>
             </div>
 
+            <!-- EXF Date -->
+            <div class="bg-indigo-50/80 p-1.5 sm:p-2 rounded-xl border border-indigo-200/80">
+              <span class="text-[9px] font-bold text-indigo-700 uppercase tracking-wider block flex items-center gap-1">
+                <i data-lucide="calendar" class="w-3 h-3 text-indigo-600"></i>
+                EXF Date
+              </span>
+              <span id="display-exf-date" class="text-xs sm:text-sm font-black text-indigo-900 font-mono block truncate select-all">-</span>
+            </div>
+
+            <!-- Destination -->
+            <div class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60">
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                <i data-lucide="map-pin" class="w-3 h-3 text-rose-500"></i>
+                Destination
+              </span>
+              <span id="display-destination" class="text-xs sm:text-sm font-bold text-slate-800 block truncate select-all">-</span>
+            </div>
+
           </div>
 
-        </section>
+          <!-- COLLAPSIBLE SCHEDULE DETAILS (Planning & Cartons - Keeps mobile clean & compact) -->
+          <div class="pt-2 border-t border-slate-100">
+            <button id="btn-toggle-extra-details" type="button" class="w-full py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200/70 rounded-xl text-slate-700 text-[11px] font-bold flex items-center justify-between transition tap-active cursor-pointer">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="package" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span class="font-bold text-slate-800 text-[10px] sm:text-xs">Planning & Carton Breakdown</span>
+                <span id="display-pack-badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">Pack: -</span>
+              </span>
+              <span class="flex items-center gap-1 text-[10px] text-emerald-700 font-bold">
+                <span id="toggle-extra-text">Show (10 Details)</span>
+                <i id="toggle-extra-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+              </span>
+            </button>
 
-        <!-- 2B. AUDIT & PLANNING SCHEDULE CARD -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2 sm:p-2.5 space-y-1.5">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-1">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <i data-lucide="calendar-check" class="w-3.5 h-3.5 text-indigo-600"></i>
-              Audit & Planning Details
-            </span>
-            <span id="display-action-badge" class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Action: -</span>
+            <!-- Collapsible Body (Hidden by default on mobile & desktop) -->
+            <div id="extra-details-content" class="hidden mt-2 space-y-2">
+              
+              <!-- Planning Details Sub-grid -->
+              <div class="bg-indigo-50/40 rounded-xl p-2 border border-indigo-100 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[9px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+                    <i data-lucide="calendar-check" class="w-3 h-3 text-indigo-600"></i>
+                    Audit & Planning Details
+                  </span>
+                  <span id="display-action-badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 border border-indigo-200">Action: -</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Ready Audit Plan</span>
+                    <span id="display-ready-audit" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
+                  </div>
+                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Audit Prepared By</span>
+                    <span id="display-audit-prepared" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
+                  </div>
+                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">PL Position</span>
+                    <span id="display-pl-position" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
+                  </div>
+                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Action</span>
+                    <span id="display-action" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
+                  </div>
+                </div>
+                <!-- Email Remarks Banner -->
+                <div id="row-remarks-emails" class="bg-amber-50 border border-amber-200/70 p-1.5 rounded-lg flex items-center gap-1.5 text-xs text-amber-950">
+                  <i data-lucide="mail" class="w-3 h-3 text-amber-600 shrink-0"></i>
+                  <span class="text-[8px] font-bold uppercase tracking-wider text-amber-700 shrink-0">Email Remarks:</span>
+                  <span id="display-remarks-emails" class="text-[11px] font-semibold truncate select-all">-</span>
+                </div>
+              </div>
+
+              <!-- Carton Breakdown Sub-grid -->
+              <div class="bg-emerald-50/40 rounded-xl p-2 border border-emerald-100 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[9px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                    <i data-lucide="package" class="w-3 h-3 text-emerald-600"></i>
+                    Carton Breakdown
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs">
+                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Pack Type</span>
+                    <span id="display-pack" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
+                  </div>
+                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">D-PCs</span>
+                    <span id="display-dpcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+                  </div>
+                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">D-CTNS</span>
+                    <span id="display-dctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+                  </div>
+                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Loose Pcs</span>
+                    <span id="display-loose-pcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+                  </div>
+                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Loose CTNS</span>
+                    <span id="display-loose-ctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
-            <!-- Ready Audit Plan -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Ready Audit Plan</span>
-              <span id="display-ready-audit" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
-            </div>
-
-            <!-- Audit Prepared By -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Audit Prepared By</span>
-              <span id="display-audit-prepared" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
-            </div>
-
-            <!-- PL Position -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PL Position</span>
-              <span id="display-pl-position" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
-            </div>
-
-            <!-- Action -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Action</span>
-              <span id="display-action" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
-            </div>
-          </div>
-
-          <!-- Remarks from Emails (Highlighted Banner) -->
-          <div id="row-remarks-emails" class="bg-amber-50/90 border border-amber-200/80 p-1.5 rounded-xl flex items-center gap-1.5 text-xs text-amber-950">
-            <i data-lucide="mail" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>
-            <span class="text-[9px] font-bold uppercase tracking-wider text-amber-700 shrink-0">Email Remarks:</span>
-            <span id="display-remarks-emails" class="text-xs font-semibold truncate select-all">-</span>
-          </div>
-        </section>
-
-        <!-- 2C. PACKING & CARTON BREAKDOWN CARD -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2 sm:p-2.5 space-y-1.5">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-1">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <i data-lucide="package" class="w-3.5 h-3.5 text-emerald-600"></i>
-              Packing & Carton Breakdown
-            </span>
-            <span id="display-pack-badge" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">Pack: -</span>
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs">
-            <!-- Pack Type -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Pack Type</span>
-              <span id="display-pack" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
-            </div>
-
-            <!-- D-PCs -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">D-PCs</span>
-              <span id="display-dpcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-            </div>
-
-            <!-- D-CTNS -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">D-CTNS</span>
-              <span id="display-dctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-            </div>
-
-            <!-- Loose Pcs -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Loose Pcs</span>
-              <span id="display-loose-pcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-            </div>
-
-            <!-- Loose CTNS -->
-            <div class="bg-slate-50/80 p-1.5 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Loose CTNS</span>
-              <span id="display-loose-ctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-            </div>
-          </div>
         </section>
 
         <!-- 3. REMARKS & QUICK CHIPS (Concise & Easy Tap) -->
