@@ -138,41 +138,82 @@ def load_schedule_full():
             sheet_path = 'xl/' + sheet_target.lstrip('/')
             sheet_tree = ET.fromstring(zf.read(sheet_path))
 
-            cols_map = {
-                'Q': 'job',
-                'K': 'exf_date',
-                'M': 'audit_prepared_by',
-                'J': 'ready_audit_plan',
-                'N': 'action',
-                'O': 'remarks_emails',
-                'D': 'pl_position',
-                'U': 'pack',
-                'X': 'destination',
-                'AE': 'dpcs',
-                'AG': 'd_ctns',
-                'AH': 'loose_pcs',
-                'AI': 'loose_ctns',
-                'BE': 'auditor'
-            }
-
-            full_map = {}
-            auds_map = {}
-
+            # Dynamically discover column letters from Row 16 by header text
+            field_cols = {}
             for row in sheet_tree.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row'):
-                if int(row.attrib.get('r', 0)) < 17:
-                    continue
-                row_dict = {}
-                for c in row.findall('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}c'):
-                    col = ''.join([ch for ch in c.attrib.get('r', '') if ch.isalpha()])
-                    if col in cols_map:
+                row_num = int(row.attrib.get('r', 0))
+                if row_num == 16:
+                    for c in row.findall('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}c'):
+                        col = ''.join([ch for ch in c.attrib.get('r', '') if ch.isalpha()])
                         t = c.attrib.get('t', '')
                         v = c.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v')
                         val = None
                         if v is not None and v.text:
                             val = shared_strings[int(v.text)] if t == 's' else v.text
-                        row_dict[cols_map[col]] = val
+                        if val:
+                            h = val.strip().lower()
+                            if h in ('jobs#', 'job#', 'jobs', 'job') and 'job' not in field_cols:
+                                field_cols['job'] = col
+                            elif 'auditor' in h:
+                                field_cols['auditor'] = col
+                            elif 'exf' in h:
+                                field_cols['exf_date'] = col
+                            elif 'prepared' in h:
+                                field_cols['audit_prepared_by'] = col
+                            elif 'ready audit' in h:
+                                field_cols['ready_audit_plan'] = col
+                            elif h == 'action' and 'action' not in field_cols:
+                                field_cols['action'] = col
+                            elif 'remarks from email' in h:
+                                field_cols['remarks_emails'] = col
+                            elif 'pl_position' in h or 'pl position' in h:
+                                field_cols['pl_position'] = col
+                            elif h == 'pack':
+                                field_cols['pack'] = col
+                            elif 'destination' in h:
+                                field_cols['destination'] = col
+                            elif h == 'dpcs':
+                                field_cols['dpcs'] = col
+                            elif h in ('d_ctns', 'd ctns'):
+                                field_cols['d_ctns'] = col
+                            elif h in ('loose_pcs', 'loose pcs'):
+                                field_cols['loose_pcs'] = col
+                            elif h in ('loose ctns', 'loose_ctns'):
+                                field_cols['loose_ctns'] = col
 
-                job_raw = row_dict.get('job')
+            job_col = field_cols.get('job', 'R')
+            aud_col = field_cols.get('auditor', 'BF')
+            exf_col = field_cols.get('exf_date', 'K')
+            prep_col = field_cols.get('audit_prepared_by', 'N')
+            ready_col = field_cols.get('ready_audit_plan', 'J')
+            act_col = field_cols.get('action', 'O')
+            rem_col = field_cols.get('remarks_emails', 'P')
+            pl_col = field_cols.get('pl_position', 'D')
+            pack_col = field_cols.get('pack', 'V')
+            dest_col = field_cols.get('destination', 'Y')
+            dpcs_col = field_cols.get('dpcs', 'AF')
+            dctns_col = field_cols.get('d_ctns', 'AH')
+            lpcs_col = field_cols.get('loose_pcs', 'AI')
+            lctns_col = field_cols.get('loose_ctns', 'AJ')
+
+            full_map = {}
+            auds_map = {}
+
+            for row in sheet_tree.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row'):
+                row_num = int(row.attrib.get('r', 0))
+                if row_num < 17:
+                    continue
+                row_dict = {}
+                for c in row.findall('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}c'):
+                    col = ''.join([ch for ch in c.attrib.get('r', '') if ch.isalpha()])
+                    t = c.attrib.get('t', '')
+                    v = c.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v')
+                    val = None
+                    if v is not None and v.text:
+                        val = shared_strings[int(v.text)] if t == 's' else v.text
+                    row_dict[col] = val
+
+                job_raw = row_dict.get(job_col)
                 if not job_raw:
                     continue
                 j_str = str(job_raw).strip().upper()
@@ -182,7 +223,7 @@ def load_schedule_full():
                     else:
                         continue
 
-                raw_aud = clean_val(row_dict.get('auditor'))
+                raw_aud = clean_val(row_dict.get(aud_col))
                 if raw_aud.lower() in ('0', '-', 'audior', 'auditors') or raw_aud.isdigit():
                     raw_aud = ''
                 elif raw_aud.lower() == 'qmp':
@@ -194,18 +235,18 @@ def load_schedule_full():
 
                 rec = {
                     'auditor': raw_aud,
-                    'exf_date': format_excel_date(clean_val(row_dict.get('exf_date'))),
-                    'audit_prepared_by': clean_val(row_dict.get('audit_prepared_by')),
-                    'ready_audit_plan': format_excel_date(clean_val(row_dict.get('ready_audit_plan'))),
-                    'action': clean_val(row_dict.get('action')),
-                    'remarks_emails': clean_val(row_dict.get('remarks_emails')),
-                    'pl_position': clean_val(row_dict.get('pl_position')),
-                    'pack': clean_val(row_dict.get('pack')),
-                    'destination': clean_val(row_dict.get('destination')),
-                    'dpcs': clean_val(row_dict.get('dpcs')),
-                    'd_ctns': clean_val(row_dict.get('d_ctns')),
-                    'loose_pcs': clean_val(row_dict.get('loose_pcs')),
-                    'loose_ctns': clean_val(row_dict.get('loose_ctns'))
+                    'exf_date': format_excel_date(clean_val(row_dict.get(exf_col))),
+                    'audit_prepared_by': clean_val(row_dict.get(prep_col)),
+                    'ready_audit_plan': format_excel_date(clean_val(row_dict.get(ready_col))),
+                    'action': clean_val(row_dict.get(act_col)),
+                    'remarks_emails': clean_val(row_dict.get(rem_col)),
+                    'pl_position': clean_val(row_dict.get(pl_col)),
+                    'pack': clean_val(row_dict.get(pack_col)),
+                    'destination': clean_val(row_dict.get(dest_col)),
+                    'dpcs': clean_val(row_dict.get(dpcs_col)),
+                    'd_ctns': clean_val(row_dict.get(dctns_col)),
+                    'loose_pcs': clean_val(row_dict.get(lpcs_col)),
+                    'loose_ctns': clean_val(row_dict.get(lctns_col))
                 }
 
                 clean_no_j = j_str.replace('J', '')
