@@ -1380,32 +1380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Toggle Extra Planning & Carton Details (Keeps screen compact on mobile)
-    window.toggleExtraDetails = function() {
-        const content = document.getElementById("extra-details-content");
-        const text = document.getElementById("toggle-extra-text");
-        const icon = document.getElementById("toggle-extra-icon");
-        if (!content) return;
-        const isHidden = content.classList.contains("hidden");
-        if (isHidden) {
-            content.classList.remove("hidden");
-            if (text) text.textContent = "Hide Details";
-            if (icon) icon.classList.add("rotate-180");
-        } else {
-            content.classList.add("hidden");
-            if (text) text.textContent = "Show (10 Details)";
-            if (icon) icon.classList.remove("rotate-180");
-        }
-        if (window.lucide && typeof window.lucide.createIcons === "function") {
-            window.lucide.createIcons();
-        }
-    };
-
-    const btnToggleExtraDetails = document.getElementById("btn-toggle-extra-details");
-    if (btnToggleExtraDetails) {
-        btnToggleExtraDetails.addEventListener("click", window.toggleExtraDetails);
-    }
-
+    // Toggle Extra Planning & Carton Details: Delegated cleanly to window.toggleExtraDetails
     // Add to Multi-Job Queue
     if (btnAddToMulti) {
         btnAddToMulti.addEventListener('click', () => {
