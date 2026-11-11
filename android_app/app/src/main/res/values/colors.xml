@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="wa_dark">#075E54</color>
+    <color name="wa_green">#25D366</color>
+    <color name="wa_teal">#128C7E</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="bg_light">#F8FAFC</color>
+</resources>

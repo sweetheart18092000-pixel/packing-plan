@@ -161,6 +161,12 @@
           <span class="text-[10px] hidden sm:inline">Install</span>
         </button>
 
+        <!-- Download Android APK Button -->
+        <a href="./PackingPlan.apk" download="PackingPlan.apk" class="tap-active text-xs bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-600 text-white font-bold px-2 py-1.5 rounded-xl border border-emerald-500/50 flex items-center gap-1 shrink-0 shadow-xs" title="Android APK Download Karein">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-300"></i>
+          <span class="text-[10px]">APK</span>
+        </a>
+
         <!-- Mobile QR Modal Button (Desktop Only) -->
         <button id="btn-show-qr" type="button" class="hidden md:flex tap-active text-xs bg-emerald-800/90 hover:bg-emerald-700 text-white font-medium px-2 py-1.5 rounded-xl border border-emerald-600/40 items-center gap-1 shrink-0" title="Mobile QR Code">
           <i data-lucide="qr-code" class="w-3.5 h-3.5 text-emerald-300"></i>
@@ -187,8 +193,12 @@
       </div>
       <div class="flex items-center gap-1.5 shrink-0">
         <button id="btn-banner-install" class="bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 font-black px-2.5 py-1 rounded-lg text-[11px] shadow tap-active">
-          Install
+          Install App
         </button>
+        <a href="./PackingPlan.apk" download="PackingPlan.apk" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2 py-1 rounded-lg text-[11px] border border-emerald-500/50 flex items-center gap-1 tap-active">
+          <i data-lucide="smartphone" class="w-3 h-3 text-emerald-300"></i>
+          <span>APK</span>
+        </a>
         <button id="btn-banner-close" class="text-emerald-300 hover:text-white p-1 tap-active">
           <i data-lucide="x" class="w-3.5 h-3.5"></i>
         </button>
@@ -714,6 +724,12 @@
           Mobile aur PC ka same Wi-Fi hona zaroori hai. Agar link na khule to <strong>ALLOW_MOBILE_FIREWALL.bat</strong> par double-click karein.
         </p>
       </div>
+
+      <!-- Direct Android APK Download Button in Modal -->
+      <a href="./PackingPlan.apk" download="PackingPlan.apk" class="w-full py-2.5 bg-[#075E54] hover:bg-[#064e46] active:bg-[#053e37] text-white text-xs font-bold rounded-xl shadow flex items-center justify-center gap-2 tap-active">
+        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-300"></i>
+        <span>Download Android APK File (.apk)</span>
+      </a>
 
     </div>
   </div>
