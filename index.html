@@ -97,85 +97,95 @@
       border-color: #dc2626 !important;
       animation: pulse-red 1.5s infinite;
     }
+    html, body {
+      height: 100dvh;
+      max-height: 100dvh;
+      width: 100%;
+      overflow: hidden !important;
+      overscroll-behavior: none;
+      position: fixed;
+      inset: 0;
+    }
   </style>
+  <script>
+    window.deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.deferredInstallPrompt = e;
+      var btn = document.getElementById('btn-install-app');
+      if (btn) btn.classList.remove('hidden');
+    });
+  </script>
 </head>
-<body class="bg-[#F8FAFC] text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-600 selection:text-white">
+<body class="bg-[#F8FAFC] text-slate-800 h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col font-sans antialiased selection:bg-emerald-600 selection:text-white">
 
   <!-- ============================================== -->
   <!-- TOP APP HEADER (Sleek, Compact & Touch-Proof) -->
   <!-- ============================================== -->
-  <header class="bg-[#075E54] text-white sticky top-0 z-40 shadow-sm border-b border-emerald-800/40 backdrop-blur-md">
-    <div class="max-w-5xl mx-auto px-2.5 sm:px-4 h-12 sm:h-14 flex items-center justify-between gap-1.5">
+  <header class="bg-[#075E54] text-white shrink-0 z-40 shadow-sm border-b border-emerald-800/40">
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 h-10 sm:h-12 flex items-center justify-between gap-1">
       
       <!-- Brand & Status -->
-      <div class="flex items-center space-x-2 shrink-0">
-        <div class="w-7 h-7 sm:w-8 sm:h-8 bg-[#25D366] text-white rounded-lg shadow-sm flex items-center justify-center font-black shrink-0">
-          <i data-lucide="package" class="w-4 h-4"></i>
+      <div class="flex items-center space-x-1.5 shrink-0">
+        <div class="w-6 h-6 sm:w-7 sm:h-7 bg-[#25D366] text-white rounded-lg shadow-sm flex items-center justify-center font-black shrink-0">
+          <i data-lucide="package" class="w-3.5 h-3.5"></i>
         </div>
-        <div class="leading-tight">
-          <div class="flex items-center gap-1">
-            <h1 class="text-xs sm:text-sm font-black tracking-tight whitespace-nowrap">Closed Packing</h1>
-            <span class="inline-flex items-center px-1 py-0.2 rounded-full text-[8px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">LIVE</span>
-          </div>
+        <div class="leading-tight flex items-center gap-1">
+          <h1 class="text-xs sm:text-sm font-black tracking-tight whitespace-nowrap">Closed Packing</h1>
+          <span class="inline-flex items-center px-1 py-0.2 rounded-full text-[8px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">LIVE</span>
         </div>
       </div>
 
-      <!-- Action Buttons (Responsive & Touch-Friendly) -->
-      <div class="flex items-center gap-1.5 shrink-0">
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
         
         <!-- Dedicated Admin Portal Button -->
         <button id="btn-nav-admin" type="button" 
-          class="tap-active text-xs bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 font-black px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition cursor-pointer select-none shrink-0" 
+          class="tap-active text-xs bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 font-black px-2 py-1 rounded-lg shadow-xs flex items-center gap-1 transition cursor-pointer select-none shrink-0" 
           style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
           title="Admin Portal (Shoaib)">
-          <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-950 pointer-events-none"></i>
-          <span id="label-nav-admin" class="text-[11px] font-black pointer-events-none">Admin</span>
+          <i data-lucide="crown" class="w-3 h-3 text-amber-950 pointer-events-none"></i>
+          <span id="label-nav-admin" class="text-[10px] font-black pointer-events-none">Admin</span>
         </button>
 
         <!-- Dedicated Worker Selection Button -->
         <button id="btn-nav-worker" type="button" 
-          class="tap-active text-xs bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition cursor-pointer select-none shrink-0" 
+          class="tap-active text-xs bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold px-2 py-1 rounded-lg shadow-xs flex items-center gap-1 transition cursor-pointer select-none shrink-0" 
           style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
           title="Worker Select / Change">
-          <i data-lucide="user" class="w-3.5 h-3.5 text-emerald-200 pointer-events-none"></i>
-          <span id="label-nav-worker" class="text-[11px] font-bold pointer-events-none">Worker</span>
+          <i data-lucide="user" class="w-3 h-3 text-emerald-200 pointer-events-none"></i>
+          <span id="label-nav-worker" class="text-[10px] font-bold pointer-events-none">Worker</span>
         </button>
 
         <!-- Live System Sync Button -->
         <button id="btn-sync-dump" type="button" 
-          class="tap-active text-xs bg-emerald-800/80 hover:bg-emerald-700 active:bg-emerald-900 text-emerald-100 font-bold px-2 py-1.5 rounded-xl border border-emerald-600/40 shadow-sm flex items-center gap-1 transition shrink-0" 
+          class="tap-active text-xs bg-emerald-800/80 hover:bg-emerald-700 active:bg-emerald-900 text-emerald-100 font-bold px-2 py-1 rounded-lg border border-emerald-600/40 shadow-xs flex items-center gap-1 transition shrink-0" 
           style="touch-action: manipulation;"
           title="Dump.xlsx Sync">
-          <i data-lucide="refresh-cw" id="icon-sync" class="w-3.5 h-3.5 text-emerald-300 pointer-events-none"></i>
-          <span class="text-[11px] hidden sm:inline">Sync</span>
+          <i data-lucide="refresh-cw" id="icon-sync" class="w-3 h-3 text-emerald-300 pointer-events-none"></i>
+          <span class="text-[10px] hidden sm:inline">Sync</span>
         </button>
 
-        <!-- Dump Count Badge (Hidden on very narrow mobile) -->
-        <div id="btn-badge-sync" class="hidden sm:flex text-[11px] bg-emerald-900/80 border border-emerald-700/60 text-emerald-100 font-bold px-2 py-1.5 rounded-xl items-center gap-1 cursor-pointer tap-active shrink-0" title="Jobs count from Dump.xlsx">
+        <!-- Dump Count Badge -->
+        <div id="btn-badge-sync" class="hidden sm:flex text-[10px] bg-emerald-900/80 border border-emerald-700/60 text-emerald-100 font-bold px-2 py-1 rounded-lg items-center gap-1 cursor-pointer tap-active shrink-0" title="Jobs count from Dump.xlsx">
           <span id="dump-count-badge">2,265 Jobs</span>
         </div>
 
-        <!-- PWA Install Mobile App Button -->
-        <button id="btn-install-app" type="button" class="hidden tap-active text-xs bg-emerald-400 hover:bg-emerald-300 text-emerald-950 font-black px-2 py-1.5 rounded-xl shadow flex items-center gap-1 shrink-0" title="Mobile App Install Karein">
-          <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-950 pointer-events-none"></i>
-          <span class="text-[10px] hidden sm:inline">Install</span>
+        <!-- Direct Install App Button -->
+        <button id="btn-install-app" type="button" class="tap-active text-xs bg-[#25D366] hover:bg-[#20ba59] text-emerald-950 font-black px-2 py-1 rounded-lg shadow-xs flex items-center gap-1 shrink-0 cursor-pointer" title="Direct Mobile App Install">
+          <i data-lucide="smartphone" class="w-3 h-3 text-emerald-950 pointer-events-none"></i>
+          <span class="text-[10px] pointer-events-none">Install</span>
         </button>
 
-        <!-- Download Android APK Button -->
-        <a href="./PackingPlan.apk" download="PackingPlan.apk" class="tap-active text-xs bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-600 text-white font-bold px-2 py-1.5 rounded-xl border border-emerald-500/50 flex items-center gap-1 shrink-0 shadow-xs" title="Android APK Download Karein">
-          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-300"></i>
-          <span class="text-[10px]">APK</span>
-        </a>
-
         <!-- Mobile QR Modal Button (Desktop Only) -->
-        <button id="btn-show-qr" type="button" class="hidden md:flex tap-active text-xs bg-emerald-800/90 hover:bg-emerald-700 text-white font-medium px-2 py-1.5 rounded-xl border border-emerald-600/40 items-center gap-1 shrink-0" title="Mobile QR Code">
-          <i data-lucide="qr-code" class="w-3.5 h-3.5 text-emerald-300"></i>
+        <button id="btn-show-qr" type="button" class="hidden md:flex tap-active text-xs bg-emerald-800/90 hover:bg-emerald-700 text-white font-medium px-2 py-1 rounded-lg border border-emerald-600/40 items-center gap-1 shrink-0" title="Mobile QR Code">
+          <i data-lucide="qr-code" class="w-3 h-3 text-emerald-300"></i>
           <span class="text-[10px]">QR</span>
         </button>
 
         <!-- Upload New Dump File Button (Desktop Only) -->
-        <label for="input-upload-dump" class="hidden md:flex tap-active text-xs bg-emerald-900/60 hover:bg-emerald-800 text-white font-medium px-2 py-1.5 rounded-xl border border-emerald-700/50 items-center gap-1 cursor-pointer shrink-0" title="Naya Dump.xlsx upload karein">
-          <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-300"></i>
+        <label for="input-upload-dump" class="hidden md:flex tap-active text-xs bg-emerald-900/60 hover:bg-emerald-800 text-white font-medium px-2 py-1 rounded-lg border border-emerald-700/50 items-center gap-1 cursor-pointer shrink-0" title="Naya Dump.xlsx upload karein">
+          <i data-lucide="upload" class="w-3 h-3 text-emerald-300"></i>
           <span class="text-[10px]">Upload</span>
         </label>
         <input type="file" id="input-upload-dump" accept=".xlsx, .xls" class="hidden">
@@ -184,469 +194,357 @@
     </div>
   </header>
 
-  <!-- INSTALL PROMPT BANNER FOR MOBILE -->
-  <div id="pwa-install-banner" class="hidden bg-emerald-950 border-b border-emerald-700/60 text-white px-3 py-2 text-xs shadow-md">
-    <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2">
-        <img src="icon-192.png" alt="App Icon" class="w-6 h-6 rounded-lg shadow-sm border border-emerald-400/30">
-        <span class="text-[11px] font-bold">Mobile App install karein (Fast 1-Tap Access):</span>
-      </div>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button id="btn-banner-install" class="bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 font-black px-2.5 py-1 rounded-lg text-[11px] shadow tap-active">
-          Install App
-        </button>
-        <a href="./PackingPlan.apk" download="PackingPlan.apk" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2 py-1 rounded-lg text-[11px] border border-emerald-500/50 flex items-center gap-1 tap-active">
-          <i data-lucide="smartphone" class="w-3 h-3 text-emerald-300"></i>
-          <span>APK</span>
-        </a>
-        <button id="btn-banner-close" class="text-emerald-300 hover:text-white p-1 tap-active">
-          <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
-    </div>
+  <div id="pwa-install-banner" class="hidden">
+    <button id="btn-banner-install" class="hidden"></button>
+    <button id="btn-banner-close" class="hidden"></button>
   </div>
 
   <!-- ============================================== -->
-  <!-- MAIN CONTENT CONTAINER (Concise, Clean & Fixed) -->
+  <!-- MAIN CONTENT CONTAINER (100% Zero-Scroll Fit-to-Screen) -->
   <!-- ============================================== -->
-  <main class="max-w-7xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-3.5 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-3.5 pb-24 lg:pb-6">
+  <main class="max-w-7xl w-full mx-auto px-2 sm:px-4 py-1.5 sm:py-2.5 flex-1 min-h-0 overflow-hidden flex flex-col lg:grid lg:grid-cols-12 gap-1.5 sm:gap-3">
 
-    <!-- LEFT COLUMN: SEARCH & BENTO DETAILS (7 Cols on Desktop) -->
-    <div class="lg:col-span-7 space-y-3 sm:space-y-3.5">
+    <!-- LEFT COLUMN: SEARCH, SPECS & REMARKS (7 Cols on Desktop) -->
+    <div class="lg:col-span-7 flex flex-col gap-1.5 sm:gap-2.5 shrink-0 lg:min-h-0 lg:justify-between">
 
       <!-- MODE SWITCHER TABS: Single Job vs Bulk Multiple Jobs -->
-      <div class="flex items-center p-1 bg-slate-200/80 rounded-xl gap-1 border border-slate-300/60 shadow-xs">
-        <button id="tab-btn-single" type="button" class="flex-1 py-2 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 bg-white text-emerald-950 shadow-sm tap-active cursor-pointer select-none" style="touch-action: manipulation;">
-          <i data-lucide="search" class="w-3.5 h-3.5 text-emerald-600 pointer-events-none"></i>
+      <div class="flex items-center p-0.5 bg-slate-200/80 rounded-xl gap-1 border border-slate-300/60 shrink-0">
+        <button id="tab-btn-single" type="button" class="flex-1 py-1 sm:py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-black transition flex items-center justify-center gap-1 bg-white text-emerald-950 shadow-xs tap-active cursor-pointer select-none" style="touch-action: manipulation;">
+          <i data-lucide="search" class="w-3 h-3 text-emerald-600 pointer-events-none"></i>
           <span class="pointer-events-none">Single Job Search</span>
         </button>
-        <button id="tab-btn-bulk" type="button" class="flex-1 py-2 px-3 rounded-lg text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 tap-active cursor-pointer select-none" style="touch-action: manipulation;">
-          <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600 pointer-events-none"></i>
-          <span class="pointer-events-none">Bulk Jobs (Bohat Saari Jobs)</span>
+        <button id="tab-btn-bulk" type="button" class="flex-1 py-1 sm:py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-extrabold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1 tap-active cursor-pointer select-none" style="touch-action: manipulation;">
+          <i data-lucide="layers" class="w-3 h-3 text-emerald-600 pointer-events-none"></i>
+          <span class="pointer-events-none">Bulk Jobs (Multiple)</span>
         </button>
       </div>
 
       <!-- 1. SINGLE JOB SECTION -->
-      <div id="section-single-mode" class="space-y-3 sm:space-y-3.5">
+      <div id="section-single-mode" class="flex flex-col gap-1.5 sm:gap-2.5">
 
-        <!-- 1. SEARCH CARD (Hero Element with Universal Search & Numeric Toggle) -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2.5 sm:p-3.5 relative">
+        <!-- 1. SEARCH CARD (Ultra-Sleek Single-Screen) -->
+        <section class="bg-white rounded-xl sm:rounded-2xl shadow-xs border border-slate-200/80 p-1.5 sm:p-3 relative">
           
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <i data-lucide="search" class="w-3.5 h-3.5 text-emerald-600"></i>
-              Search Database
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <label class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 shrink-0">
+              <i data-lucide="search" class="w-3 h-3 text-emerald-600"></i>
+              <span>Search</span>
             </label>
-            <span class="text-[9px] text-slate-400">Job #, PO # ya Style #</span>
-          </div>
 
-          <!-- Search Category Filter Pills -->
-          <div class="flex items-center gap-1 mb-2 overflow-x-auto no-scrollbar">
-            <button type="button" data-search-filter="all" class="search-filter-pill px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-emerald-600 text-white shadow-xs transition tap-active flex items-center gap-1">
-              <i data-lucide="sparkles" class="w-3 h-3"></i> All
-            </button>
-            <button type="button" data-search-filter="job" class="search-filter-pill px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-1">
-              <i data-lucide="hash" class="w-3 h-3 text-emerald-600"></i> Job (123)
-            </button>
-            <button type="button" data-search-filter="po" class="search-filter-pill px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-1">
-              <i data-lucide="file-text" class="w-3 h-3 text-sky-600"></i> PO #
-            </button>
-            <button type="button" data-search-filter="style" class="search-filter-pill px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-1">
-              <i data-lucide="tag" class="w-3 h-3 text-purple-600"></i> Style #
-            </button>
+            <!-- Search Category Filter Pills (Inline on same row to save vertical space) -->
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+              <button type="button" data-search-filter="all" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold bg-emerald-600 text-white shadow-2xs transition tap-active flex items-center gap-0.5 shrink-0">
+                <i data-lucide="sparkles" class="w-2.5 h-2.5"></i> All
+              </button>
+              <button type="button" data-search-filter="job" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-0.5 shrink-0">
+                <i data-lucide="hash" class="w-2.5 h-2.5 text-emerald-600"></i> Job
+              </button>
+              <button type="button" data-search-filter="po" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-0.5 shrink-0">
+                <i data-lucide="file-text" class="w-2.5 h-2.5 text-sky-600"></i> PO #
+              </button>
+              <button type="button" data-search-filter="style" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-0.5 shrink-0">
+                <i data-lucide="tag" class="w-2.5 h-2.5 text-purple-600"></i> Style #
+              </button>
+            </div>
           </div>
 
           <!-- Input Bar with Clear Button -->
           <div class="relative flex items-center">
-            <div id="search-input-icon" class="absolute left-3 text-emerald-600 pointer-events-none">
-              <i data-lucide="hash" class="w-4 h-4"></i>
+            <div id="search-input-icon" class="absolute left-2.5 text-emerald-600 pointer-events-none">
+              <i data-lucide="hash" class="w-3.5 h-3.5"></i>
             </div>
             
-            <input type="text" id="input-job-search" placeholder="Type Job # (e.g. 67250 / J67250), PO #, Style #..." 
+            <input type="text" id="input-job-search" placeholder="Type Job # (e.g. 66800), PO #, Style #..." 
               autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
-              class="w-full text-xs sm:text-sm font-extrabold text-slate-900 border-2 border-emerald-500/60 rounded-xl pl-9 pr-16 py-2 bg-emerald-50/20 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 outline-none transition uppercase shadow-inner">
+              class="w-full text-xs sm:text-sm font-extrabold text-slate-900 border-2 border-emerald-500/60 rounded-xl pl-8 pr-14 py-1 sm:py-1.5 bg-emerald-50/20 focus:bg-white focus:border-emerald-600 outline-none transition uppercase">
             
-            <button id="btn-clear-search" class="absolute right-1.5 px-2 py-1 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-[11px] font-bold rounded-lg transition tap-active flex items-center gap-1">
+            <button id="btn-clear-search" class="absolute right-1 px-2 py-0.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-[10px] font-bold rounded-lg transition tap-active flex items-center gap-0.5">
               <i data-lucide="x" class="w-3 h-3"></i> Clear
             </button>
           </div>
 
           <!-- Autocomplete Suggestions Dropdown -->
-          <div id="suggestions-box" class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-30 max-h-60 overflow-y-auto hidden divide-y divide-slate-100 backdrop-blur-md">
+          <div id="suggestions-box" class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-50 max-h-52 overflow-y-auto hidden divide-y divide-slate-100">
             <!-- Populated by JS -->
           </div>
 
         </section>
 
-        <!-- 2. COMPACT BENTO GRID (Clean, Concise & Structured) -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2.5 sm:p-3.5 space-y-2">
+        <!-- 2. COMPACT BENTO GRID (3x3 on Mobile, 3x4 on Desktop - Zero Scroll) -->
+        <section class="bg-white rounded-xl sm:rounded-2xl shadow-xs border border-slate-200/80 p-1.5 sm:p-3 space-y-1 sm:space-y-2">
           
-          <div class="flex items-center justify-between border-b border-slate-100 pb-1">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-emerald-600"></i>
-              Specifications
-            </span>
-            <span id="active-job-indicator" class="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">No Job Selected</span>
+          <div class="flex items-center justify-between border-b border-slate-100 pb-1 gap-1">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 shrink-0">
+                <i data-lucide="clipboard-check" class="w-3 h-3 text-emerald-600"></i>
+                Specs
+              </span>
+              <span id="active-job-indicator" class="text-[9px] sm:text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 truncate">No Job</span>
+            </div>
+
+            <!-- Popup Trigger for 10 Planning & Carton Details (Never pushes screen down) -->
+            <button id="btn-toggle-extra-details" type="button" onclick="window.toggleExtraDetails(event)" class="py-0.5 px-2 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-slate-700 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition tap-active cursor-pointer shrink-0">
+              <i data-lucide="package" class="w-3 h-3 text-emerald-600"></i>
+              <span id="display-pack-badge" class="text-[9px] font-bold text-emerald-800">Pack: -</span>
+              <span class="text-emerald-700 font-black underline ml-0.5" id="toggle-extra-text">Details (10)</span>
+              <i id="toggle-extra-icon" data-lucide="chevron-down" class="w-3 h-3 text-emerald-700"></i>
+            </button>
           </div>
 
-          <!-- Bento Grid: Sleek, compact and identical to clean screenshot -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+          <!-- Bento Grid: 3-Col on Mobile (3 neat rows), 4-Col on Desktop (3 neat rows) -->
+          <div class="grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-1.5 text-xs">
             
-            <!-- PO Number -->
-            <div class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PO Number</span>
-              <span id="display-po" class="text-xs sm:text-sm font-black text-slate-800 font-mono block truncate select-all">-</span>
+            <!-- 1. PO Number -->
+            <div class="bg-slate-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-slate-200/60">
+              <span class="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">PO Number</span>
+              <span id="display-po" class="text-[11px] sm:text-sm font-black text-slate-800 font-mono block truncate select-all mt-0.5">-</span>
             </div>
 
-            <!-- Quantity (Hero Metric) -->
-            <div class="bg-emerald-50/90 p-1.5 sm:p-2 rounded-xl border border-emerald-200/80">
-              <span class="text-[9px] font-bold text-emerald-700 uppercase tracking-wider block">Order QTY</span>
-              <span id="display-qty" class="text-xs sm:text-sm font-black text-emerald-800 font-mono block truncate">-</span>
+            <!-- 2. Quantity (Hero Metric) -->
+            <div class="bg-emerald-50/90 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-emerald-200/80">
+              <span class="text-[8px] sm:text-[9px] font-bold text-emerald-700 uppercase tracking-wider block leading-none">Order QTY</span>
+              <span id="display-qty" class="text-[11px] sm:text-sm font-black text-emerald-800 font-mono block truncate mt-0.5">-</span>
             </div>
 
-            <!-- Style # -->
-            <div class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Style #</span>
-              <span id="display-style" class="text-xs sm:text-sm font-bold text-slate-800 font-mono block truncate select-all">-</span>
+            <!-- 3. Style # -->
+            <div class="bg-slate-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-slate-200/60">
+              <span class="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Style #</span>
+              <span id="display-style" class="text-[11px] sm:text-sm font-bold text-slate-800 font-mono block truncate select-all mt-0.5">-</span>
             </div>
 
-            <!-- Customer / Buyer -->
-            <div class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Buyer</span>
-              <span id="display-customer" class="text-xs sm:text-sm font-bold text-slate-700 block truncate">-</span>
+            <!-- 4. Customer / Buyer -->
+            <div class="bg-slate-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-slate-200/60">
+              <span class="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Buyer</span>
+              <span id="display-customer" class="text-[11px] sm:text-sm font-bold text-slate-700 block truncate mt-0.5">-</span>
             </div>
 
-            <!-- Finish Name (Spans 2 cols on tablet/desktop) -->
-            <div class="col-span-2 sm:col-span-2 bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Finish Name</span>
-              <span id="display-finish" class="text-xs sm:text-sm font-black text-slate-900 block truncate select-all">-</span>
+            <!-- 5. Finish Name -->
+            <div class="col-span-1 sm:col-span-2 bg-slate-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-slate-200/60">
+              <span class="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Finish Name</span>
+              <span id="display-finish" class="text-[11px] sm:text-sm font-black text-slate-900 block truncate select-all mt-0.5">-</span>
             </div>
 
-            <!-- Auditor (Col 1 on mobile, 1 col on desktop) -->
-            <div id="display-auditor-card" class="bg-indigo-50/80 p-1.5 sm:p-2 rounded-xl border border-indigo-200/80 transition-colors">
-              <span id="display-auditor-label" class="text-[9px] font-bold text-indigo-700 uppercase tracking-wider block flex items-center gap-1">
-                <i data-lucide="user-check" class="w-3 h-3 text-indigo-600"></i>
-                Auditor
-              </span>
-              <span id="display-auditor" class="text-xs sm:text-sm font-black text-indigo-950 block truncate select-all mt-0.5">Not Assigned</span>
+            <!-- 6. Destination -->
+            <div class="bg-slate-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-slate-200/60">
+              <span class="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Destination</span>
+              <span id="display-destination" class="text-[11px] sm:text-sm font-bold text-slate-800 block truncate select-all mt-0.5">-</span>
+            </div>
+
+            <!-- 7. EXF Date -->
+            <div class="bg-indigo-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-indigo-200/80">
+              <span class="text-[8px] sm:text-[9px] font-bold text-indigo-700 uppercase tracking-wider block leading-none">EXF Date</span>
+              <span id="display-exf-date" class="text-[11px] sm:text-sm font-black text-indigo-900 font-mono block truncate select-all mt-0.5">-</span>
+            </div>
+
+            <!-- 8. Auditor -->
+            <div id="display-auditor-card" class="sm:col-span-2 bg-indigo-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-indigo-200/80 transition-colors">
+              <span id="display-auditor-label" class="text-[8px] sm:text-[9px] font-bold text-indigo-700 uppercase tracking-wider block leading-none">Auditor</span>
+              <span id="display-auditor" class="text-[11px] sm:text-sm font-black text-indigo-950 block truncate select-all mt-0.5">Not Assigned</span>
               <span id="display-auditor-badge" style="display: none;"></span>
             </div>
 
-            <!-- Audit Status (Col 2 on mobile, 1 col on desktop - Screen Only) -->
-            <div id="display-audit-card" class="bg-amber-50/90 p-1.5 sm:p-2 rounded-xl border border-amber-300 transition-colors">
-              <span id="display-audit-label" class="text-[9px] font-bold text-amber-700 uppercase tracking-wider block flex items-center gap-1">
-                <i data-lucide="shield-check" class="w-3 h-3 text-amber-600"></i>
-                Audit Status <span class="text-[8px] font-normal text-amber-600/80">(Screen)</span>
-              </span>
-              <span id="display-audit" class="text-xs sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5">Not Audited</span>
+            <!-- 9. Audit Status (Screen Only) -->
+            <div id="display-audit-card" class="sm:col-span-2 bg-amber-50/90 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-amber-300 transition-colors">
+              <span id="display-audit-label" class="text-[8px] sm:text-[9px] font-bold text-amber-700 uppercase tracking-wider block leading-none">Audit Status</span>
+              <span id="display-audit" class="text-[11px] sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5">Not Audited</span>
               <span id="display-audit-badge" style="display: none;"></span>
             </div>
 
-            <!-- EXF Date -->
-            <div class="bg-indigo-50/80 p-1.5 sm:p-2 rounded-xl border border-indigo-200/80">
-              <span class="text-[9px] font-bold text-indigo-700 uppercase tracking-wider block flex items-center gap-1">
-                <i data-lucide="calendar" class="w-3 h-3 text-indigo-600"></i>
-                EXF Date
-              </span>
-              <span id="display-exf-date" class="text-xs sm:text-sm font-black text-indigo-900 font-mono block truncate select-all">-</span>
-            </div>
-
-            <!-- Destination -->
-            <div class="bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                <i data-lucide="map-pin" class="w-3 h-3 text-rose-500"></i>
-                Destination
-              </span>
-              <span id="display-destination" class="text-xs sm:text-sm font-bold text-slate-800 block truncate select-all">-</span>
-            </div>
-
-          </div>
-
-          <!-- COLLAPSIBLE SCHEDULE DETAILS (Planning & Cartons - Keeps mobile clean & compact) -->
-          <div class="pt-2 border-t border-slate-100">
-            <button id="btn-toggle-extra-details" type="button" onclick="window.toggleExtraDetails(event)" class="w-full py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200/70 rounded-xl text-slate-700 text-[11px] font-bold flex items-center justify-between transition tap-active cursor-pointer">
-              <span class="flex items-center gap-1.5">
-                <i data-lucide="package" class="w-3.5 h-3.5 text-emerald-600"></i>
-                <span class="font-bold text-slate-800 text-[10px] sm:text-xs">Planning & Carton Breakdown</span>
-                <span id="display-pack-badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">Pack: -</span>
-              </span>
-              <span class="flex items-center gap-1 text-[10px] text-emerald-700 font-bold">
-                <span id="toggle-extra-text">Show (10 Details)</span>
-                <i id="toggle-extra-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
-              </span>
-            </button>
-
-            <!-- Collapsible Body (Hidden by default on mobile & desktop) -->
-            <div id="extra-details-content" class="hidden mt-2 space-y-2" style="display: none;">
-              
-              <!-- Planning Details Sub-grid -->
-              <div class="bg-indigo-50/40 rounded-xl p-2 border border-indigo-100 space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-[9px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
-                    <i data-lucide="calendar-check" class="w-3 h-3 text-indigo-600"></i>
-                    Audit & Planning Details
-                  </span>
-                  <span id="display-action-badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 border border-indigo-200">Action: -</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
-                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Ready Audit Plan</span>
-                    <span id="display-ready-audit" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
-                  </div>
-                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Audit Prepared By</span>
-                    <span id="display-audit-prepared" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
-                  </div>
-                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">PL Position</span>
-                    <span id="display-pl-position" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
-                  </div>
-                  <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Action</span>
-                    <span id="display-action" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
-                  </div>
-                </div>
-                <!-- Email Remarks Banner -->
-                <div id="row-remarks-emails" class="bg-amber-50 border border-amber-200/70 p-1.5 rounded-lg flex items-center gap-1.5 text-xs text-amber-950">
-                  <i data-lucide="mail" class="w-3 h-3 text-amber-600 shrink-0"></i>
-                  <span class="text-[8px] font-bold uppercase tracking-wider text-amber-700 shrink-0">Email Remarks:</span>
-                  <span id="display-remarks-emails" class="text-[11px] font-semibold truncate select-all">-</span>
-                </div>
-              </div>
-
-              <!-- Carton Breakdown Sub-grid -->
-              <div class="bg-emerald-50/40 rounded-xl p-2 border border-emerald-100 space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-[9px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-                    <i data-lucide="package" class="w-3 h-3 text-emerald-600"></i>
-                    Carton Breakdown
-                  </span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs">
-                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Pack Type</span>
-                    <span id="display-pack" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
-                  </div>
-                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">D-PCs</span>
-                    <span id="display-dpcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-                  </div>
-                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">D-CTNS</span>
-                    <span id="display-dctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-                  </div>
-                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Loose Pcs</span>
-                    <span id="display-loose-pcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-                  </div>
-                  <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Loose CTNS</span>
-                    <span id="display-loose-ctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
           </div>
 
         </section>
 
-        <!-- 3. REMARKS & QUICK CHIPS (Concise & Easy Tap) -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2.5 sm:p-3.5 space-y-1.5">
+        <!-- 3. REMARKS & QUICK CHIPS (Compact Single-Screen) -->
+        <section class="bg-white rounded-xl sm:rounded-2xl shadow-xs border border-slate-200/80 p-1.5 sm:p-3 space-y-1">
           
           <div class="flex items-center justify-between">
-            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-600"></i>
-              Remarks <span class="text-[9px] font-normal text-slate-400">(Hum khud dalenge)</span>
+            <label class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="edit-3" class="w-3 h-3 text-emerald-600"></i>
+              Remarks
             </label>
-            <button id="btn-reset-form" class="text-[10px] font-bold text-slate-400 hover:text-slate-600 tap-active">
-              Reset
-            </button>
-          </div>
-
-          <!-- Remarks Input with Voice Typing Button -->
-          <div class="flex items-center gap-1.5">
-            <input type="text" id="input-remarks" placeholder="Type remarks or tap chips below..."
-              class="flex-1 text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none transition">
-            
-            <button id="btn-voice-remarks" type="button" 
-              class="shrink-0 p-1.5 px-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 text-slate-700 hover:text-emerald-700 flex items-center gap-1 text-xs font-bold transition tap-active shadow-xs" 
-              title="Voice Typing: Bol kar remarks likhein (Urdu / English)">
-              <i data-lucide="mic" id="icon-voice-remarks" class="w-4 h-4 text-emerald-600"></i>
-              <span class="text-[10px] hidden sm:inline">Voice</span>
-            </button>
-          </div>
-
-          <!-- Quick Remark Chips (Horizontal Clean Scroll on Mobile) -->
-          <div class="pt-0.5">
-            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              <button type="button" class="quick-remark-btn px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-lg text-[10px] font-bold shrink-0 tap-active transition">
-                Ready For Audit
+            <div class="flex items-center gap-2">
+              <button id="btn-add-to-multi" class="text-[9px] sm:text-[10px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1 tap-active transition">
+                <i data-lucide="plus-circle" class="w-3 h-3 text-emerald-600"></i>
+                <span>+ Multi-Job Queue</span>
               </button>
-              <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
-                Locked & Ready For Audit
-              </button>
-              <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
-                Packing in progress
-              </button>
-              <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
-                Audit OK / Passed
-              </button>
-              <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
-                Ready to Ship
-              </button>
-              <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
-                Waiting Cartons
-              </button>
-              <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
-                Waiting Stickers
+              <button id="btn-reset-form" class="text-[9px] sm:text-[10px] font-bold text-slate-400 hover:text-slate-600 tap-active">
+                Reset
               </button>
             </div>
           </div>
 
-          <!-- Multi-Job Queue Option (Compact) -->
-          <div class="pt-1 border-t border-slate-100 flex items-center justify-between">
-            <button id="btn-add-to-multi" class="text-[10px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg flex items-center gap-1 tap-active transition">
-              <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
-              <span>Add to Multi-Job Queue</span>
+          <!-- Remarks Input with Voice Typing Button -->
+          <div class="flex items-center gap-1">
+            <input type="text" id="input-remarks" placeholder="Remarks (Default: Ready For Audit, or type custom)..."
+              class="flex-1 text-xs border border-slate-300 rounded-lg sm:rounded-xl px-2.5 py-1 sm:py-1.5 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-emerald-400 outline-none transition">
+            
+            <button id="btn-voice-remarks" type="button" 
+              class="shrink-0 p-1 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 text-slate-700 flex items-center gap-1 text-xs font-bold transition tap-active" 
+              title="Voice Typing">
+              <i data-lucide="mic" id="icon-voice-remarks" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span class="text-[10px] hidden sm:inline">Voice</span>
             </button>
-            <span class="text-[9px] text-slate-400">Multiple jobs aik sath bhejein</span>
+          </div>
+
+          <!-- Quick Remark Chips -->
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+            <button type="button" class="quick-remark-btn px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-md text-[9px] sm:text-[10px] font-bold shrink-0 tap-active transition">
+              Ready For Audit
+            </button>
+            <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-md text-[9px] sm:text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Locked & Ready For Audit
+            </button>
+            <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-md text-[9px] sm:text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Packing in progress
+            </button>
+            <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-md text-[9px] sm:text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Audit OK / Passed
+            </button>
+            <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-md text-[9px] sm:text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Ready to Ship
+            </button>
+            <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-md text-[9px] sm:text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Waiting Cartons
+            </button>
+            <button type="button" class="quick-remark-btn px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-md text-[9px] sm:text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">
+              Waiting Stickers
+            </button>
           </div>
 
         </section>
 
       </div>
 
-      <!-- 2. BULK JOBS INPUT SECTION (Multiple Jobs Box) -->
-      <div id="section-bulk-mode" class="space-y-3 hidden">
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 space-y-3">
+      <!-- 2. BULK JOBS INPUT SECTION (Compact Zero-Scroll) -->
+      <div id="section-bulk-mode" class="space-y-2 hidden">
+        <section class="bg-white rounded-xl sm:rounded-2xl shadow-xs border border-slate-200/80 p-2 sm:p-3.5 space-y-2">
           
-          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-            <div>
-              <h2 class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
-                <i data-lucide="list-plus" class="w-4 h-4 text-emerald-600"></i>
-                Bulk Jobs Input
-              </h2>
-              <p class="text-[10px] text-slate-400">Excel, WhatsApp ya Notepad se copy karke direct paste karein</p>
-            </div>
+          <div class="flex items-center justify-between border-b border-slate-100 pb-1">
+            <h2 class="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+              <i data-lucide="list-plus" class="w-3.5 h-3.5 text-emerald-600"></i>
+              Bulk Jobs Input
+            </h2>
             <button id="btn-clear-bulk-text" type="button" class="text-[10px] font-bold text-rose-500 hover:text-rose-700 tap-active">
               Clear All
             </button>
           </div>
 
           <!-- Textarea for Multiple Jobs -->
-          <div class="space-y-1">
-            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Jobs List <span class="text-rose-500">*</span> (Har line ya comma par alag job)
-            </label>
-            <textarea id="input-bulk-jobs" rows="6" placeholder="Yahan jobs likhein ya paste karein (e.g.):&#10;65250&#10;67215&#10;64952&#10;J65758&#10;(Ya comma se: 65250, 67215, 64952)" 
-              class="w-full text-xs sm:text-sm font-mono border-2 border-emerald-500/50 rounded-xl p-3 bg-emerald-50/15 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 outline-none transition uppercase shadow-inner"></textarea>
+          <div>
+            <textarea id="input-bulk-jobs" rows="3" placeholder="Paste jobs list here (e.g. 65250, 67215, 64952)..." 
+              class="w-full text-xs font-mono border-2 border-emerald-500/50 rounded-xl p-2 bg-emerald-50/15 focus:bg-white focus:border-emerald-600 outline-none transition uppercase"></textarea>
           </div>
 
-          <!-- Common Remarks for Bulk with Voice Typing -->
-          <div class="space-y-1.5">
-            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Common Remarks <span class="text-slate-400 font-normal">(Sb jobs ke liye)</span>
-            </label>
-            <div class="flex items-center gap-1.5">
-              <input type="text" id="input-bulk-remarks" placeholder="Type remarks (e.g. Packing completed, Shifted to finish, Audit OK)..." 
-                class="flex-1 text-xs sm:text-sm border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none transition">
+          <!-- Common Remarks for Bulk -->
+          <div class="space-y-1">
+            <div class="flex items-center gap-1">
+              <input type="text" id="input-bulk-remarks" placeholder="Common Remarks (Default: Ready For Audit)..." 
+                class="flex-1 text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none transition">
               
               <button id="btn-bulk-voice-remarks" type="button" 
-                class="shrink-0 p-2 sm:px-2.5 sm:py-2 rounded-xl border border-slate-200 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 text-slate-700 hover:text-emerald-700 flex items-center gap-1 text-xs font-bold transition tap-active shadow-xs" 
-                title="Voice Typing: Bol kar remarks likhein">
-                <i data-lucide="mic" id="icon-bulk-voice-remarks" class="w-4 h-4 text-emerald-600"></i>
-                <span class="text-[10px] hidden sm:inline">Voice</span>
+                class="shrink-0 p-1.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 flex items-center gap-1 text-xs font-bold transition tap-active">
+                <i data-lucide="mic" id="icon-bulk-voice-remarks" class="w-3.5 h-3.5 text-emerald-600"></i>
               </button>
             </div>
 
             <!-- Bulk Quick Chips -->
-            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              <button type="button" class="bulk-remark-chip px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-lg text-[10px] font-bold shrink-0 tap-active transition">Ready For Audit</button>
-              <button type="button" class="bulk-remark-chip px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">Packing completed</button>
-              <button type="button" class="bulk-remark-chip px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">Audit OK / Passed</button>
-              <button type="button" class="bulk-remark-chip px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">100% Ready to Ship</button>
-              <button type="button" class="bulk-remark-chip px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-lg text-[10px] font-semibold text-slate-700 shrink-0 tap-active transition">Carton Shortage</button>
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+              <button type="button" class="bulk-remark-chip px-2 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-md text-[9px] font-bold shrink-0 tap-active">Ready For Audit</button>
+              <button type="button" class="bulk-remark-chip px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-[9px] font-semibold text-slate-700 shrink-0 tap-active">Packing completed</button>
+              <button type="button" class="bulk-remark-chip px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-[9px] font-semibold text-slate-700 shrink-0 tap-active">Audit OK / Passed</button>
+              <button type="button" class="bulk-remark-chip px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-[9px] font-semibold text-slate-700 shrink-0 tap-active">100% Ready to Ship</button>
             </div>
           </div>
 
-          <!-- Main Action Button -->
-          <button id="btn-generate-bulk" type="button" class="w-full py-3 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white text-xs sm:text-sm font-black rounded-xl shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 tap-active transition">
-            <i data-lucide="zap" class="w-4 h-4"></i>
+          <button id="btn-generate-bulk" type="button" class="w-full py-2 bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-black rounded-xl shadow-xs flex items-center justify-center gap-1.5 tap-active transition">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
             <span>GENERATE COMBINED WHATSAPP MESSAGE</span>
           </button>
 
-          <!-- Bulk Summary Status Box -->
-          <div id="bulk-status-box" class="hidden p-2.5 rounded-xl text-xs space-y-1"></div>
+          <div id="bulk-status-box" class="hidden p-1.5 rounded-lg text-[10px]"></div>
 
         </section>
       </div>
 
     </div>
 
-    <!-- RIGHT COLUMN: WHATSAPP PREVIEW & DESKTOP ACTIONS (5 Cols on Desktop) -->
-    <div class="lg:col-span-5 space-y-3 sm:space-y-3.5 flex flex-col">
+    <!-- RIGHT COLUMN: WHATSAPP PREVIEW & ACTIONS (5 Cols on Desktop, Remaining Screen on Mobile) -->
+    <div class="lg:col-span-5 flex-1 min-h-0 flex flex-col gap-1.5">
 
       <!-- WHATSAPP PREVIEW CARD -->
-      <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col flex-1">
+      <section class="bg-white rounded-xl sm:rounded-2xl shadow-xs border border-slate-200/80 p-2 sm:p-3.5 flex flex-col flex-1 min-h-0">
         
-        <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-1 mb-1.5 shrink-0">
           <div class="flex items-center gap-1.5">
-            <div class="w-6 h-6 bg-[#25D366] text-white rounded-lg flex items-center justify-center">
-              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            <div class="w-5 h-5 sm:w-6 sm:h-6 bg-[#25D366] text-white rounded-lg flex items-center justify-center">
+              <i data-lucide="message-circle" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
             </div>
             <h2 class="font-extrabold text-slate-800 text-xs sm:text-sm">WhatsApp Preview</h2>
           </div>
 
           <!-- Format Mode (Single vs Multi vs Bulk) -->
-          <div class="flex items-center text-[10px] bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-            <button id="btn-format-single" class="px-2 py-0.5 rounded font-bold text-emerald-800 bg-white shadow-xs transition">Single</button>
-            <button id="btn-format-multi" class="px-2 py-0.5 rounded font-medium text-slate-600 transition">Multi (<span id="multi-count-badge">0</span>)</button>
-            <button id="btn-format-bulk" class="px-2 py-0.5 rounded font-medium text-slate-600 transition">Bulk</button>
+          <div class="flex items-center text-[9px] sm:text-[10px] bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <button id="btn-format-single" class="px-1.5 py-0.5 rounded font-bold text-emerald-800 bg-white shadow-2xs transition">Single</button>
+            <button id="btn-format-multi" class="px-1.5 py-0.5 rounded font-medium text-slate-600 transition">Multi (<span id="multi-count-badge">0</span>)</button>
+            <button id="btn-format-bulk" class="px-1.5 py-0.5 rounded font-medium text-slate-600 transition">Bulk</button>
           </div>
         </div>
 
-        <!-- Simulated WhatsApp Chat Box -->
-        <div class="wa-bg-pattern p-2.5 sm:p-3.5 rounded-xl flex-1 flex flex-col border border-slate-200/70 min-h-[220px]">
+        <!-- Simulated WhatsApp Chat Box (Fills remaining height without pushing screen) -->
+        <div class="wa-bg-pattern p-2 sm:p-3 rounded-xl flex-1 min-h-0 flex flex-col justify-center border border-slate-200/70 overflow-y-auto">
           
           <!-- Message Bubble -->
-          <div class="bg-white rounded-xl shadow-sm p-3 text-xs text-slate-800 border border-slate-200/50 max-w-full relative">
-            <div id="whatsapp-message-preview" class="whitespace-pre-wrap font-mono text-[11px] sm:text-xs leading-relaxed select-all">
+          <div class="bg-white rounded-xl shadow-xs p-2 sm:p-3 text-xs text-slate-800 border border-slate-200/50 max-w-full relative">
+            <div id="whatsapp-message-preview" class="whitespace-pre-wrap font-mono text-[10px] sm:text-xs leading-snug sm:leading-relaxed select-all">
 <!-- Formatted message goes here -->
             </div>
-            <div class="text-[9px] text-slate-400 text-right flex items-center justify-end gap-1 pt-1.5 mt-1 border-t border-slate-100">
+            <div class="text-[8px] sm:text-[9px] text-slate-400 text-right flex items-center justify-end gap-1 pt-1 mt-0.5 border-t border-slate-100">
               <span id="preview-time">08:00 pm</span>
-              <i data-lucide="check-check" class="w-3 h-3 text-sky-500"></i>
+              <i data-lucide="check-check" class="w-2.5 h-2.5 text-sky-500"></i>
             </div>
           </div>
 
         </div>
 
-        <!-- Desktop Action Buttons -->
-        <div class="mt-3 space-y-2 hidden lg:block">
-          <button id="btn-copy-whatsapp" class="w-full py-3 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white text-xs font-black rounded-xl shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2 tap-active">
-            <i data-lucide="copy" class="w-4 h-4"></i>
-            <span id="btn-copy-text">COPY WHATSAPP REPORT</span>
-          </button>
+        <!-- Action Buttons Integrated Directly at Bottom of Preview Card -->
+        <div class="mt-1.5 sm:mt-2.5 shrink-0">
+          <!-- Mobile Buttons -->
+          <div class="grid grid-cols-2 gap-1.5 lg:hidden">
+            <button id="btn-copy-whatsapp-mobile" class="py-2 bg-[#25D366] active:bg-[#1da850] text-white text-xs font-black rounded-xl shadow-sm flex items-center justify-center gap-1.5 tap-active">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span id="btn-copy-text-mobile">Copy Report</span>
+            </button>
+            <button id="btn-open-wa-mobile" class="py-2 bg-[#075E54] active:bg-[#064e46] text-white text-xs font-black rounded-xl shadow-sm flex items-center justify-center gap-1.5 tap-active">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+              <span>Share to WA</span>
+            </button>
+          </div>
 
-          <button id="btn-open-wa" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 tap-active">
-            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-            <span>Share Directly to WhatsApp</span>
-          </button>
+          <!-- Desktop Buttons -->
+          <div class="hidden lg:grid grid-cols-1 gap-1.5">
+            <button id="btn-copy-whatsapp" class="w-full py-2.5 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white text-xs font-black rounded-xl shadow-sm transition flex items-center justify-center gap-2 tap-active">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              <span id="btn-copy-text">COPY WHATSAPP REPORT</span>
+            </button>
+            <button id="btn-open-wa" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 tap-active">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>Share Directly to WhatsApp</span>
+            </button>
+          </div>
         </div>
 
       </section>
 
-      <!-- MULTI-JOB QUEUE (Collapsible Card) -->
-      <section id="multi-job-queue-card" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 hidden">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2 text-xs">
-          <span class="font-bold text-slate-800 flex items-center gap-1.5">
-            <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i>
+      <!-- MULTI-JOB QUEUE (Hidden unless active) -->
+      <section id="multi-job-queue-card" class="bg-white rounded-xl shadow-xs border border-slate-200 p-2 hidden shrink-0">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-1 mb-1 text-[10px]">
+          <span class="font-bold text-slate-800 flex items-center gap-1">
+            <i data-lucide="layers" class="w-3 h-3 text-emerald-600"></i>
             Queued Jobs (<span id="queue-count">0</span>)
           </span>
-          <button id="btn-clear-queue" class="text-rose-600 hover:text-rose-700 text-[10px] font-bold tap-active">Clear All</button>
+          <button id="btn-clear-queue" class="text-rose-600 hover:text-rose-700 text-[9px] font-bold tap-active">Clear All</button>
         </div>
-        <div id="queue-items-list" class="space-y-1.5 max-h-36 overflow-y-auto text-xs">
+        <div id="queue-items-list" class="space-y-1 max-h-20 overflow-y-auto text-[10px]">
           <!-- Populated by JS -->
         </div>
       </section>
@@ -656,23 +554,90 @@
   </main>
 
   <!-- ============================================== -->
-  <!-- MOBILE STICKY BOTTOM ACTION BAR (Thumb Friendly) -->
+  <!-- POPUP MODAL: 10 EXTRA PLANNING & CARTON DETAILS -->
   <!-- ============================================== -->
-  <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-2 pb-safe z-30 shadow-2xl">
-    <div class="max-w-md mx-auto grid grid-cols-2 gap-2">
-      
-      <!-- Big Copy Button -->
-      <button id="btn-copy-whatsapp-mobile" class="py-3 bg-[#25D366] active:bg-[#1da850] text-white text-xs sm:text-sm font-black rounded-xl shadow-md flex items-center justify-center gap-1.5 tap-active">
-        <i data-lucide="copy" class="w-4 h-4"></i>
-        <span id="btn-copy-text-mobile">Copy Report</span>
-      </button>
+  <div id="extra-details-content" style="display: none;" onclick="if(event.target===this) window.toggleExtraDetails(event)" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9990] flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-3.5 space-y-2.5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <span class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+          <i data-lucide="package" class="w-4 h-4 text-emerald-600"></i>
+          Planning & Carton Breakdown
+        </span>
+        <button type="button" onclick="window.toggleExtraDetails(event)" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 tap-active">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
 
-      <!-- Direct Share WhatsApp Button -->
-      <button id="btn-open-wa-mobile" class="py-3 bg-[#075E54] active:bg-[#064e46] text-white text-xs sm:text-sm font-black rounded-xl shadow-md flex items-center justify-center gap-1.5 tap-active">
-        <i data-lucide="share-2" class="w-4 h-4"></i>
-        <span>Share to WA</span>
-      </button>
+      <!-- Planning Details Sub-grid -->
+      <div class="bg-indigo-50/50 rounded-xl p-2.5 border border-indigo-100 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+            <i data-lucide="calendar-check" class="w-3.5 h-3.5 text-indigo-600"></i>
+            Audit & Planning Details
+          </span>
+          <span id="display-action-badge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 border border-indigo-200">Action: -</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
+          <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Ready Audit Plan</span>
+            <span id="display-ready-audit" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
+          </div>
+          <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Audit Prepared By</span>
+            <span id="display-audit-prepared" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
+          </div>
+          <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">PL Position</span>
+            <span id="display-pl-position" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
+          </div>
+          <div class="bg-white p-1.5 rounded-lg border border-indigo-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Action</span>
+            <span id="display-action" class="text-xs font-bold text-slate-800 block truncate select-all">-</span>
+          </div>
+        </div>
+        <!-- Email Remarks Banner -->
+        <div id="row-remarks-emails" class="bg-amber-50 border border-amber-200/70 p-1.5 rounded-lg flex items-center gap-1.5 text-xs text-amber-950">
+          <i data-lucide="mail" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>
+          <span class="text-[9px] font-bold uppercase tracking-wider text-amber-700 shrink-0">Email Remarks:</span>
+          <span id="display-remarks-emails" class="text-[11px] font-semibold truncate select-all">-</span>
+        </div>
+      </div>
 
+      <!-- Carton Breakdown Sub-grid -->
+      <div class="bg-emerald-50/50 rounded-xl p-2.5 border border-emerald-100 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+            <i data-lucide="package" class="w-3.5 h-3.5 text-emerald-600"></i>
+            Carton Breakdown
+          </span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5 text-xs">
+          <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Pack Type</span>
+            <span id="display-pack" class="text-xs font-black text-slate-800 block truncate select-all">-</span>
+          </div>
+          <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">D-PCs</span>
+            <span id="display-dpcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+          </div>
+          <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">D-CTNS</span>
+            <span id="display-dctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+          </div>
+          <div class="bg-white p-1.5 rounded-lg border border-emerald-100">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Loose Pcs</span>
+            <span id="display-loose-pcs" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+          </div>
+          <div class="bg-white p-1.5 rounded-lg border border-emerald-100 col-span-2">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Loose CTNS</span>
+            <span id="display-loose-ctns" class="text-xs font-black text-slate-800 font-mono block truncate select-all">-</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" onclick="window.toggleExtraDetails(event)" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl tap-active">
+        Close Details
+      </button>
     </div>
   </div>
 
@@ -1005,24 +970,18 @@
     <span id="toast-message">Copied to clipboard!</span>
   </div>
 
-    <script>
+  <script>
     window.toggleExtraDetails = function(e) {
       if (e && e.stopPropagation) e.stopPropagation();
       var content = document.getElementById('extra-details-content');
-      var text = document.getElementById('toggle-extra-text');
-      var icon = document.getElementById('toggle-extra-icon');
       if (!content) return;
       var isClosed = content.classList.contains('hidden') || content.style.display === 'none';
       if (isClosed) {
         content.classList.remove('hidden');
-        content.style.display = 'block';
-        if (text) text.textContent = 'Hide Details';
-        if (icon) icon.classList.add('rotate-180');
+        content.style.display = 'flex';
       } else {
         content.classList.add('hidden');
         content.style.display = 'none';
-        if (text) text.textContent = 'Show (10 Details)';
-        if (icon) icon.classList.remove('rotate-180');
       }
       if (window.lucide && typeof window.lucide.createIcons === 'function') {
         window.lucide.createIcons();
@@ -1030,65 +989,47 @@
     };
   </script>
 
-  <script src="report_app.js?v=20"></script>
+  <script src="report_app.js?v=21"></script>
 
-  <!-- PWA Service Worker & Install Handler -->
+  <!-- Direct App Install & PWA Service Worker Handler -->
   <script>
-    // Register PWA Service Worker
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && window.location.protocol.indexOf('http') === 0) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then((reg) => {
-          console.log('PWA ServiceWorker registered:', reg.scope);
-        }).catch((err) => {
-          console.warn('PWA ServiceWorker registration error:', err);
-        });
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
 
-    // PWA Install Prompt Logic
-    let deferredInstallPrompt = null;
     const btnInstallApp = document.getElementById('btn-install-app');
-    const pwaBanner = document.getElementById('pwa-install-banner');
-    const btnBannerInstall = document.getElementById('btn-banner-install');
-    const btnBannerClose = document.getElementById('btn-banner-close');
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredInstallPrompt = e;
+    // Hide Install button if already running inside installed Standalone App or Android APK
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || navigator.userAgent.indexOf('PackingPlanAndroidApp') !== -1) {
+      if (btnInstallApp) btnInstallApp.style.display = 'none';
+    }
 
-      if (btnInstallApp) btnInstallApp.classList.remove('hidden');
-      if (pwaBanner && !sessionStorage.getItem('pwa_banner_dismissed')) {
-        pwaBanner.classList.remove('hidden');
-      }
-    });
-
-    async function triggerPwaInstall() {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        const choice = await deferredInstallPrompt.userChoice;
+    async function triggerDirectInstall() {
+      if (window.deferredInstallPrompt) {
+        window.deferredInstallPrompt.prompt();
+        const choice = await window.deferredInstallPrompt.userChoice;
         if (choice.outcome === 'accepted') {
-          if (btnInstallApp) btnInstallApp.classList.add('hidden');
-          if (pwaBanner) pwaBanner.classList.add('hidden');
+          if (btnInstallApp) btnInstallApp.style.display = 'none';
         }
-        deferredInstallPrompt = null;
+        window.deferredInstallPrompt = null;
       } else {
-        alert('App Install karne ka aasan tareeqa:\n1. Chrome ke upar 3 dots (Menu) dabayein.\n2. "Install App" ya "Add to Home screen" select karein.');
+        // Fallback: trigger signed Release APK direct download/install
+        const a = document.createElement('a');
+        a.href = './PackingPlan.apk';
+        a.download = 'PackingPlan.apk';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
     }
 
-    if (btnInstallApp) btnInstallApp.addEventListener('click', triggerPwaInstall);
-    if (btnBannerInstall) btnBannerInstall.addEventListener('click', triggerPwaInstall);
-    if (btnBannerClose && pwaBanner) {
-      btnBannerClose.addEventListener('click', () => {
-        pwaBanner.classList.add('hidden');
-        sessionStorage.setItem('pwa_banner_dismissed', 'true');
-      });
-    }
+    if (btnInstallApp) btnInstallApp.addEventListener('click', triggerDirectInstall);
 
     window.addEventListener('appinstalled', () => {
-      if (btnInstallApp) btnInstallApp.classList.add('hidden');
-      if (pwaBanner) pwaBanner.classList.add('hidden');
-      deferredInstallPrompt = null;
+      if (btnInstallApp) btnInstallApp.style.display = 'none';
+      window.deferredInstallPrompt = null;
     });
   </script>
 </body>

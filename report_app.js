@@ -221,44 +221,61 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {}
 
-        // 2. Fetch fresh jobs_data.js with cache busting
+        const CLOUD_BASE = 'https://sweetheart18092000-pixel.github.io/packing-plan';
+        const isFileProtocol = window.location.protocol === 'file:';
+
+        // 2. Fetch fresh jobs_data.js with cache busting (local or cloud for APK)
         if (!synced) {
-            try {
-                const bustUrl = './jobs_data.js?_t=' + Date.now();
-                const res = await fetch(bustUrl, { cache: 'no-store' });
-                if (res.ok) {
-                    const jsText = await res.text();
-                    const jsonMatch = jsText.match(/window\.DUMP_JOBS\s*=\s*(\[.*?\].*?);/s);
-                    if (jsonMatch && jsonMatch[1]) {
-                        const parsed = JSON.parse(jsonMatch[1]);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            jobsDataset = parsed;
-                            synced = true;
+            const jobUrls = isFileProtocol
+                ? [`${CLOUD_BASE}/jobs_data.js?_t=${Date.now()}`]
+                : [`./jobs_data.js?_t=${Date.now()}`, `${CLOUD_BASE}/jobs_data.js?_t=${Date.now()}`];
+            for (const bustUrl of jobUrls) {
+                try {
+                    const res = await fetch(bustUrl, { cache: 'no-store' });
+                    if (res.ok) {
+                        const jsText = await res.text();
+                        const jsonMatch = jsText.match(/window\.DUMP_JOBS\s*=\s*(\[.*?\].*?);/s);
+                        if (jsonMatch && jsonMatch[1]) {
+                            const parsed = JSON.parse(jsonMatch[1]);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                jobsDataset = parsed;
+                                synced = true;
+                                break;
+                            }
                         }
                     }
+                } catch (err) {
+                    console.warn('Fallback jobs_data fetch error:', err);
                 }
-            } catch (err) {
-                console.warn('Fallback jobs_data fetch error:', err);
             }
         }
 
-        // 3. Fetch fresh audit_data.js with cache busting
-        try {
-            const auditBustUrl = './audit_data.js?_t=' + Date.now();
-            const aRes = await fetch(auditBustUrl, { cache: 'no-store' });
-            if (aRes.ok) {
-                const aText = await aRes.text();
-                const aMatch = aText.match(/window\.AUDIT_DATA\s*=\s*(\{.*?\}.*?);/s);
-                if (aMatch && aMatch[1]) {
-                    window.AUDIT_DATA = JSON.parse(aMatch[1]);
-                    try {
-                        localStorage.setItem('PACKING_AUDIT_DATA', JSON.stringify(window.AUDIT_DATA));
-                    } catch (e) {}
-                    auditSynced = true;
+        // 3. Fetch fresh audit_data.js with cache busting (local or cloud for APK)
+        const auditUrls = isFileProtocol
+            ? [`${CLOUD_BASE}/audit_data.js?_t=${Date.now()}`]
+            : [`./audit_data.js?_t=${Date.now()}`, `${CLOUD_BASE}/audit_data.js?_t=${Date.now()}`];
+        for (const auditBustUrl of auditUrls) {
+            try {
+                const aRes = await fetch(auditBustUrl, { cache: 'no-store' });
+                if (aRes.ok) {
+                    const aText = await aRes.text();
+                    const aMatch = aText.match(/window\.AUDIT_DATA\s*=\s*(\{.*?\});/s);
+                    if (aMatch && aMatch[1]) {
+                        window.AUDIT_DATA = JSON.parse(aMatch[1]);
+                        try {
+                            localStorage.setItem('PACKING_AUDIT_DATA', JSON.stringify(window.AUDIT_DATA));
+                        } catch (e) {}
+                        auditSynced = true;
+                    }
+                    const sMatch = aText.match(/window\.SCHEDULE_DATA\s*=\s*(\{.*?\});/s);
+                    if (sMatch && sMatch[1]) {
+                        window.SCHEDULE_DATA = JSON.parse(sMatch[1]);
+                    }
+                    if (auditSynced) break;
                 }
+            } catch (err) {
+                console.warn('Fallback audit_data fetch error:', err);
             }
-        } catch (err) {
-            console.warn('Fallback audit_data fetch error:', err);
         }
 
         if (synced) {
@@ -713,13 +730,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const a = String(auditor || '').toLowerCase();
             const audLabel = document.getElementById('display-auditor-label');
             if (a && a !== 'not assigned' && a !== '---' && a !== '-') {
-                displayAuditorCard.className = 'bg-indigo-50/90 p-1.5 sm:p-2 rounded-xl border border-indigo-200/90 transition-colors';
-                if (displayAuditor) displayAuditor.className = 'text-xs sm:text-sm font-black text-indigo-950 block truncate select-all mt-0.5';
-                if (audLabel) audLabel.className = 'text-[9px] font-bold text-indigo-700 uppercase tracking-wider block flex items-center gap-1';
+                displayAuditorCard.className = 'sm:col-span-2 bg-indigo-50/90 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-indigo-200/90 transition-colors';
+                if (displayAuditor) displayAuditor.className = 'text-[11px] sm:text-sm font-black text-indigo-950 block truncate select-all mt-0.5';
+                if (audLabel) audLabel.className = 'text-[8px] sm:text-[9px] font-bold text-indigo-700 uppercase tracking-wider block leading-none';
             } else {
-                displayAuditorCard.className = 'bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 transition-colors';
-                if (displayAuditor) displayAuditor.className = 'text-xs sm:text-sm font-black text-slate-600 block truncate select-all mt-0.5';
-                if (audLabel) audLabel.className = 'text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1';
+                displayAuditorCard.className = 'sm:col-span-2 bg-slate-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-slate-200/60 transition-colors';
+                if (displayAuditor) displayAuditor.className = 'text-[11px] sm:text-sm font-black text-slate-600 block truncate select-all mt-0.5';
+                if (audLabel) audLabel.className = 'text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none';
             }
         }
         if (displayAuditorBadge) {
@@ -735,17 +752,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const s = String(auditStatus || '').toLowerCase();
             const auditLabel = document.getElementById('display-audit-label');
             if (s.includes('pass') || s.includes('ok')) {
-                displayAuditCard.className = 'bg-emerald-50/95 p-1.5 sm:p-2 rounded-xl border-2 border-emerald-400/90 transition-colors shadow-2xs';
-                if (displayAudit) displayAudit.className = 'text-xs sm:text-sm font-black text-emerald-950 block truncate select-all mt-0.5';
-                if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-emerald-700 uppercase tracking-wider block flex items-center gap-1';
+                displayAuditCard.className = 'sm:col-span-2 bg-emerald-50/95 p-1 sm:p-2 rounded-lg sm:rounded-xl border-2 border-emerald-400/90 transition-colors shadow-2xs';
+                if (displayAudit) displayAudit.className = 'text-[11px] sm:text-sm font-black text-emerald-950 block truncate select-all mt-0.5';
+                if (auditLabel) auditLabel.className = 'text-[8px] sm:text-[9px] font-bold text-emerald-700 uppercase tracking-wider block leading-none';
             } else if (s.includes('fail') || s.includes('reject') || s.includes('hold')) {
-                displayAuditCard.className = 'bg-rose-50/95 p-1.5 sm:p-2 rounded-xl border-2 border-rose-300 transition-colors shadow-2xs';
-                if (displayAudit) displayAudit.className = 'text-xs sm:text-sm font-black text-rose-950 block truncate select-all mt-0.5';
-                if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-rose-700 uppercase tracking-wider block flex items-center gap-1';
+                displayAuditCard.className = 'sm:col-span-2 bg-rose-50/95 p-1 sm:p-2 rounded-lg sm:rounded-xl border-2 border-rose-300 transition-colors shadow-2xs';
+                if (displayAudit) displayAudit.className = 'text-[11px] sm:text-sm font-black text-rose-950 block truncate select-all mt-0.5';
+                if (auditLabel) auditLabel.className = 'text-[8px] sm:text-[9px] font-bold text-rose-700 uppercase tracking-wider block leading-none';
             } else {
-                displayAuditCard.className = 'bg-amber-50/90 p-1.5 sm:p-2 rounded-xl border border-amber-300 transition-colors';
-                if (displayAudit) displayAudit.className = 'text-xs sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5';
-                if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-amber-700 uppercase tracking-wider block flex items-center gap-1';
+                displayAuditCard.className = 'sm:col-span-2 bg-amber-50/90 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-amber-300 transition-colors';
+                if (displayAudit) displayAudit.className = 'text-[11px] sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5';
+                if (auditLabel) auditLabel.className = 'text-[8px] sm:text-[9px] font-bold text-amber-700 uppercase tracking-wider block leading-none';
             }
         }
         if (displayAuditBadge) {
@@ -812,12 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
         suggestionsBox.classList.add('hidden');
 
         updatePreview();
-        // Notification suppressed per user request
-
-        // Mobile UX: brief gentle scroll to preview or remarks
-        if (window.innerWidth < 640) {
-            inputRemarks.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        // Notification and scroll suppressed per user request (single-screen zero-scroll mode)
     }
 
     // --- Search Category Filter State ---
@@ -1353,10 +1365,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             showToast('✅ Combined Message ban gaya!');
             if (navigator.vibrate) navigator.vibrate([20, 40]);
-            if (window.innerWidth < 1024) {
-                const previewCard = document.getElementById('whatsapp-message-preview');
-                if (previewCard) previewCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
         });
     }
 
@@ -1372,24 +1380,24 @@ document.addEventListener('DOMContentLoaded', () => {
             displayFinish.textContent = '-';
             if (displayAuditor) {
                 displayAuditor.textContent = 'Not Assigned';
-                displayAuditor.className = 'text-xs sm:text-sm font-black text-slate-600 block truncate select-all mt-0.5';
+                displayAuditor.className = 'text-[11px] sm:text-sm font-black text-slate-600 block truncate select-all mt-0.5';
             }
             if (displayAuditorCard) {
-                displayAuditorCard.className = 'bg-slate-50/80 p-1.5 sm:p-2 rounded-xl border border-slate-200/60 transition-colors';
+                displayAuditorCard.className = 'sm:col-span-2 bg-slate-50/80 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-slate-200/60 transition-colors';
             }
             const audLabel = document.getElementById('display-auditor-label');
-            if (audLabel) audLabel.className = 'text-[9px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1';
+            if (audLabel) audLabel.className = 'text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none';
             if (displayAuditorBadge) displayAuditorBadge.style.display = 'none';
 
             if (displayAudit) {
                 displayAudit.textContent = 'Not Audited';
-                displayAudit.className = 'text-xs sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5';
+                displayAudit.className = 'text-[11px] sm:text-sm font-black text-amber-950 block truncate select-all mt-0.5';
             }
             if (displayAuditCard) {
-                displayAuditCard.className = 'bg-amber-50/90 p-1.5 sm:p-2 rounded-xl border border-amber-300 transition-colors';
+                displayAuditCard.className = 'sm:col-span-2 bg-amber-50/90 p-1 sm:p-2 rounded-lg sm:rounded-xl border border-amber-300 transition-colors';
             }
             const auditLabel = document.getElementById('display-audit-label');
-            if (auditLabel) auditLabel.className = 'text-[9px] font-bold text-amber-700 uppercase tracking-wider block flex items-center gap-1';
+            if (auditLabel) auditLabel.className = 'text-[8px] sm:text-[9px] font-bold text-amber-700 uppercase tracking-wider block leading-none';
             if (displayAuditBadge) displayAuditBadge.style.display = 'none';
             if (displayExfDate) displayExfDate.textContent = '-';
             if (displayDestination) displayDestination.textContent = '-';
