@@ -9,62 +9,20 @@
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="3dp"
+        android:layout_height="2dp"
         android:indeterminate="false"
         android:max="100"
         android:progressDrawable="@drawable/progress_drawable"
         android:visibility="gone"
         android:elevation="4dp" />
 
-    <!-- Pull to Refresh Container -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefreshLayout"
+    <!-- Fixed Single-Screen WebView (Zero Pull-Bounce or Scroll) -->
+    <WebView
+        android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/progressBar">
-
-        <WebView
-            android:id="@+id/webView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-    <!-- Offline / Error Container -->
-    <LinearLayout
-        android:id="@+id/errorLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:visibility="gone">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="⚠️ Internet Disconnected"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Internet check karein aur Retry dabayein."
-            android:textColor="#64748B"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/btnRetry"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="@color/wa_green"
-            android:text="Retry / Reload"
-            android:textColor="@color/white"
-            android:textStyle="bold" />
-    </LinearLayout>
+        android:layout_below="@id/progressBar"
+        android:overScrollMode="never"
+        android:scrollbars="none" />
 
 </RelativeLayout>

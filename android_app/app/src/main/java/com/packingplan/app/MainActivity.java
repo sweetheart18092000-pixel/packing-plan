@@ -2,33 +2,25 @@ package com.packingplan.app;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String APP_URL = "https://sweetheart18092000-pixel.github.io/packing-plan/";
+    private static final String LOCAL_ASSET_URL = "file:///android_asset/index.html";
     private WebView webView;
-    private SwipeRefreshLayout swipeRefreshLayout;
     private ProgressBar progressBar;
-    private LinearLayout errorLayout;
-    private Button btnRetry;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -37,35 +29,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         webView = findViewById(R.id.webView);
-        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         progressBar = findViewById(R.id.progressBar);
-        errorLayout = findViewById(R.id.errorLayout);
-        btnRetry = findViewById(R.id.btnRetry);
 
-        // Configure Swipe Refresh
-        swipeRefreshLayout.setColorSchemeColors(
-                getResources().getColor(R.color.wa_dark),
-                getResources().getColor(R.color.wa_green)
-        );
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            errorLayout.setVisibility(View.GONE);
-            webView.setVisibility(View.VISIBLE);
-            webView.reload();
-        });
-
-        btnRetry.setOnClickListener(v -> {
-            errorLayout.setVisibility(View.GONE);
-            webView.setVisibility(View.VISIBLE);
-            webView.loadUrl(APP_URL);
-        });
-
-        // Setup WebView
         setupWebView();
 
-        // Load URL
-        webView.loadUrl(APP_URL);
+        // Load bundled single-screen UI immediately (syncs live Excel data from GitHub Pages in background)
+        webView.loadUrl(LOCAL_ASSET_URL);
 
-        // Handle modern Back Navigation
+        // Handle Back Navigation
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -78,13 +49,20 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
     private void setupWebView() {
+        webView.setVerticalScrollBarEnabled(false);
+        webView.setHorizontalScrollBarEnabled(false);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
@@ -92,9 +70,8 @@ public class MainActivity extends AppCompatActivity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
-        // Custom User Agent to ensure mobile responsiveness
         String defaultUa = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUa + " PackingPlanAndroidApp/1.0");
+        settings.setUserAgentString(defaultUa + " PackingPlanAndroidApp/2.0");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -104,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
                     progressBar.setProgress(newProgress);
                 } else {
                     progressBar.setVisibility(View.GONE);
-                    swipeRefreshLayout.setRefreshing(false);
                 }
             }
         });
@@ -143,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                // Handle tel, mailto, etc.
+                // Handle tel, mailto, sms
                 if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -154,8 +130,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                // Keep packing-plan GitHub Pages inside WebView
-                if (url.contains("sweetheart18092000-pixel.github.io/packing-plan") || url.startsWith("file://")) {
+                // Keep local assets and packing-plan GitHub Pages inside WebView
+                if (url.startsWith("file://") || url.contains("sweetheart18092000-pixel.github.io/packing-plan")) {
                     return false;
                 }
 
@@ -170,24 +146,8 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                errorLayout.setVisibility(View.GONE);
-            }
-
-            @Override
             public void onPageFinished(WebView view, String url) {
-                swipeRefreshLayout.setRefreshing(false);
                 progressBar.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) {
-                    swipeRefreshLayout.setRefreshing(false);
-                    progressBar.setVisibility(View.GONE);
-                    webView.setVisibility(View.GONE);
-                    errorLayout.setVisibility(View.VISIBLE);
-                }
             }
         });
     }
