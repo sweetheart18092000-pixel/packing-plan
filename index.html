@@ -200,12 +200,12 @@
   </div>
 
   <!-- ============================================== -->
-  <!-- MAIN CONTENT CONTAINER (100% Zero-Scroll Fit-to-Screen) -->
+  <!-- MAIN CONTENT CONTAINER (100% Zero-Scroll Single-Screen) -->
   <!-- ============================================== -->
-  <main class="max-w-7xl w-full mx-auto px-2 sm:px-4 py-1.5 sm:py-2.5 flex-1 min-h-0 overflow-hidden flex flex-col lg:grid lg:grid-cols-12 gap-1.5 sm:gap-3">
+  <main class="max-w-4xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-3 flex-1 min-h-0 overflow-hidden flex flex-col justify-between gap-2">
 
-    <!-- LEFT COLUMN: SEARCH, SPECS & REMARKS (7 Cols on Desktop) -->
-    <div class="lg:col-span-7 flex flex-col gap-1.5 sm:gap-2.5 shrink-0 lg:min-h-0 lg:justify-between">
+    <!-- CONTENT WRAPPER -->
+    <div class="flex flex-col gap-2 flex-1 min-h-0 justify-start">
 
       <!-- MODE SWITCHER TABS: Single Job vs Bulk Multiple Jobs -->
       <div class="flex items-center p-0.5 bg-slate-200/80 rounded-xl gap-1 border border-slate-300/60 shrink-0">
@@ -222,44 +222,44 @@
       <!-- 1. SINGLE JOB SECTION -->
       <div id="section-single-mode" class="flex flex-col gap-1.5 sm:gap-2.5">
 
-        <!-- 1. SEARCH CARD (Ultra-Sleek Single-Screen) -->
-        <section class="bg-white rounded-xl sm:rounded-2xl shadow-xs border border-slate-200/80 p-1.5 sm:p-3 relative">
+        <!-- 1. SEARCH CARD (Enlarged, Clear & Prominent) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-2.5 sm:p-3.5 relative">
           
-          <div class="flex items-center justify-between gap-1 mb-1">
-            <label class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 shrink-0">
-              <i data-lucide="search" class="w-3 h-3 text-emerald-600"></i>
-              <span>Search</span>
+          <div class="flex items-center justify-between gap-1 mb-2">
+            <label class="text-[10px] sm:text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Enter Filter / Search</span>
             </label>
 
-            <!-- Search Category Filter Pills (Inline on same row to save vertical space) -->
-            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
-              <button type="button" data-search-filter="all" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold bg-emerald-600 text-white shadow-2xs transition tap-active flex items-center gap-0.5 shrink-0">
-                <i data-lucide="sparkles" class="w-2.5 h-2.5"></i> All
+            <!-- Search Category Filter Pills (Prominent & Clear) -->
+            <div class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
+              <button type="button" data-search-filter="all" class="search-filter-pill px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-black bg-emerald-600 text-white shadow-xs transition tap-active flex items-center gap-1 shrink-0">
+                <i data-lucide="sparkles" class="w-3 h-3"></i> All
               </button>
-              <button type="button" data-search-filter="job" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-0.5 shrink-0">
-                <i data-lucide="hash" class="w-2.5 h-2.5 text-emerald-600"></i> Job
+              <button type="button" data-search-filter="job" class="search-filter-pill px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-1 shrink-0">
+                <i data-lucide="hash" class="w-3 h-3 text-emerald-600"></i> Job
               </button>
-              <button type="button" data-search-filter="po" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-0.5 shrink-0">
-                <i data-lucide="file-text" class="w-2.5 h-2.5 text-sky-600"></i> PO #
+              <button type="button" data-search-filter="po" class="search-filter-pill px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-1 shrink-0">
+                <i data-lucide="file-text" class="w-3 h-3 text-sky-600"></i> PO #
               </button>
-              <button type="button" data-search-filter="style" class="search-filter-pill px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-0.5 shrink-0">
-                <i data-lucide="tag" class="w-2.5 h-2.5 text-purple-600"></i> Style #
+              <button type="button" data-search-filter="style" class="search-filter-pill px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition tap-active flex items-center gap-1 shrink-0">
+                <i data-lucide="tag" class="w-3 h-3 text-purple-600"></i> Style #
               </button>
             </div>
           </div>
 
-          <!-- Input Bar with Clear Button -->
+          <!-- Enlarged Input Bar with Clear Button -->
           <div class="relative flex items-center">
-            <div id="search-input-icon" class="absolute left-2.5 text-emerald-600 pointer-events-none">
-              <i data-lucide="hash" class="w-3.5 h-3.5"></i>
+            <div id="search-input-icon" class="absolute left-3 text-emerald-600 pointer-events-none">
+              <i data-lucide="hash" class="w-4 h-4"></i>
             </div>
             
-            <input type="text" id="input-job-search" placeholder="Type Job # (e.g. 66800), PO #, Style #..." 
+            <input type="text" id="input-job-search" placeholder="Enter Job # (e.g. 66800), PO #, Style #..." 
               autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
-              class="w-full text-xs sm:text-sm font-extrabold text-slate-900 border-2 border-emerald-500/60 rounded-xl pl-8 pr-14 py-1 sm:py-1.5 bg-emerald-50/20 focus:bg-white focus:border-emerald-600 outline-none transition uppercase">
+              class="w-full text-sm sm:text-base font-black text-slate-900 border-2 border-emerald-500/70 rounded-xl pl-10 pr-16 py-2 sm:py-2.5 bg-emerald-50/25 focus:bg-white focus:border-emerald-600 outline-none transition uppercase shadow-inner">
             
-            <button id="btn-clear-search" class="absolute right-1 px-2 py-0.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-[10px] font-bold rounded-lg transition tap-active flex items-center gap-0.5">
-              <i data-lucide="x" class="w-3 h-3"></i> Clear
+            <button id="btn-clear-search" class="absolute right-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition tap-active flex items-center gap-1">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear
             </button>
           </div>
 
@@ -468,75 +468,35 @@
 
     </div>
 
-    <!-- RIGHT COLUMN: WHATSAPP PREVIEW & ACTIONS (5 Cols on Desktop, Remaining Screen on Mobile) -->
-    <div class="lg:col-span-5 flex-1 min-h-0 flex flex-col gap-1.5">
+    </div> <!-- End Content Wrapper -->
 
-      <!-- WHATSAPP PREVIEW CARD -->
-      <section class="bg-white rounded-xl sm:rounded-2xl shadow-xs border border-slate-200/80 p-2 sm:p-3.5 flex flex-col flex-1 min-h-0">
-        
-        <div class="flex items-center justify-between border-b border-slate-100 pb-1 mb-1.5 shrink-0">
-          <div class="flex items-center gap-1.5">
-            <div class="w-5 h-5 sm:w-6 sm:h-6 bg-[#25D366] text-white rounded-lg flex items-center justify-center">
-              <i data-lucide="message-circle" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
-            </div>
-            <h2 class="font-extrabold text-slate-800 text-xs sm:text-sm">WhatsApp Preview</h2>
-          </div>
+    <!-- CLEAN BOTTOM ACTION BAR (Direct WhatsApp Copy & Share Buttons, No Preview Box) -->
+    <div class="shrink-0 pt-1">
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-copy-whatsapp" class="py-2.5 sm:py-3 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-emerald-950 text-xs sm:text-sm font-black rounded-xl shadow-md transition flex items-center justify-center gap-2 tap-active cursor-pointer">
+          <i data-lucide="copy" class="w-4 h-4 text-emerald-950"></i>
+          <span id="btn-copy-text">COPY WHATSAPP REPORT</span>
+        </button>
 
-          <!-- Format Mode (Single vs Multi vs Bulk) -->
-          <div class="flex items-center text-[9px] sm:text-[10px] bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-            <button id="btn-format-single" class="px-1.5 py-0.5 rounded font-bold text-emerald-800 bg-white shadow-2xs transition">Single</button>
-            <button id="btn-format-multi" class="px-1.5 py-0.5 rounded font-medium text-slate-600 transition">Multi (<span id="multi-count-badge">0</span>)</button>
-            <button id="btn-format-bulk" class="px-1.5 py-0.5 rounded font-medium text-slate-600 transition">Bulk</button>
-          </div>
-        </div>
+        <button id="btn-open-wa" class="py-2.5 sm:py-3 bg-[#075E54] hover:bg-[#064e46] active:bg-[#053d37] text-white text-xs sm:text-sm font-black rounded-xl shadow-md transition flex items-center justify-center gap-2 tap-active cursor-pointer">
+          <i data-lucide="share-2" class="w-4 h-4 text-emerald-300"></i>
+          <span>SHARE TO WHATSAPP</span>
+        </button>
+      </div>
 
-        <!-- Simulated WhatsApp Chat Box (Fills remaining height without pushing screen) -->
-        <div class="wa-bg-pattern p-2 sm:p-3 rounded-xl flex-1 min-h-0 flex flex-col justify-center border border-slate-200/70 overflow-y-auto">
-          
-          <!-- Message Bubble -->
-          <div class="bg-white rounded-xl shadow-xs p-2 sm:p-3 text-xs text-slate-800 border border-slate-200/50 max-w-full relative">
-            <div id="whatsapp-message-preview" class="whitespace-pre-wrap font-mono text-[10px] sm:text-xs leading-snug sm:leading-relaxed select-all">
-<!-- Formatted message goes here -->
-            </div>
-            <div class="text-[8px] sm:text-[9px] text-slate-400 text-right flex items-center justify-end gap-1 pt-1 mt-0.5 border-t border-slate-100">
-              <span id="preview-time">08:00 pm</span>
-              <i data-lucide="check-check" class="w-2.5 h-2.5 text-sky-500"></i>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Action Buttons Integrated Directly at Bottom of Preview Card -->
-        <div class="mt-1.5 sm:mt-2.5 shrink-0">
-          <!-- Mobile Buttons -->
-          <div class="grid grid-cols-2 gap-1.5 lg:hidden">
-            <button id="btn-copy-whatsapp-mobile" class="py-2 bg-[#25D366] active:bg-[#1da850] text-white text-xs font-black rounded-xl shadow-sm flex items-center justify-center gap-1.5 tap-active">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-              <span id="btn-copy-text-mobile">Copy Report</span>
-            </button>
-            <button id="btn-open-wa-mobile" class="py-2 bg-[#075E54] active:bg-[#064e46] text-white text-xs font-black rounded-xl shadow-sm flex items-center justify-center gap-1.5 tap-active">
-              <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-              <span>Share to WA</span>
-            </button>
-          </div>
-
-          <!-- Desktop Buttons -->
-          <div class="hidden lg:grid grid-cols-1 gap-1.5">
-            <button id="btn-copy-whatsapp" class="w-full py-2.5 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white text-xs font-black rounded-xl shadow-sm transition flex items-center justify-center gap-2 tap-active">
-              <i data-lucide="copy" class="w-4 h-4"></i>
-              <span id="btn-copy-text">COPY WHATSAPP REPORT</span>
-            </button>
-            <button id="btn-open-wa" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 tap-active">
-              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-              <span>Share Directly to WhatsApp</span>
-            </button>
-          </div>
-        </div>
-
-      </section>
+      <!-- Hidden fallbacks for mobile specific element references & mode switcher references -->
+      <div class="hidden" aria-hidden="true">
+        <button id="btn-copy-whatsapp-mobile"><span id="btn-copy-text-mobile"></span></button>
+        <button id="btn-open-wa-mobile"></button>
+        <button id="btn-format-single"></button>
+        <button id="btn-format-multi"><span id="multi-count-badge">0</span></button>
+        <button id="btn-format-bulk"></button>
+        <div id="whatsapp-message-preview"></div>
+        <span id="preview-time"></span>
+      </div>
 
       <!-- MULTI-JOB QUEUE (Hidden unless active) -->
-      <section id="multi-job-queue-card" class="bg-white rounded-xl shadow-xs border border-slate-200 p-2 hidden shrink-0">
+      <section id="multi-job-queue-card" class="bg-white rounded-xl shadow-xs border border-slate-200 p-2 hidden mt-1.5">
         <div class="flex items-center justify-between border-b border-slate-100 pb-1 mb-1 text-[10px]">
           <span class="font-bold text-slate-800 flex items-center gap-1">
             <i data-lucide="layers" class="w-3 h-3 text-emerald-600"></i>
@@ -548,7 +508,6 @@
           <!-- Populated by JS -->
         </div>
       </section>
-
     </div>
 
   </main>
@@ -962,12 +921,12 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION -->
-  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 sm:top-auto sm:bottom-6 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 transform -translate-y-16 sm:translate-y-16 opacity-0 transition-all duration-200 z-50">
-    <div class="p-1 bg-emerald-500 rounded-full text-white">
+  <!-- TOAST NOTIFICATION (Fixed at Bottom-Center, Safe from Status Bar/Time Overlap) -->
+  <div id="toast" class="fixed bottom-14 sm:bottom-6 left-1/2 -translate-x-1/2 bg-slate-950/95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-2xl border border-slate-700/60 flex items-center gap-2 transform translate-y-12 opacity-0 pointer-events-none transition-all duration-200 z-[9999]">
+    <div class="p-1 bg-emerald-500 rounded-full text-white shrink-0">
       <i data-lucide="check" class="w-3 h-3"></i>
     </div>
-    <span id="toast-message">Copied to clipboard!</span>
+    <span id="toast-message" class="truncate max-w-[280px] sm:max-w-md">Copied to clipboard!</span>
   </div>
 
   <script>

@@ -174,13 +174,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!toast || !toastMessage) return;
         toastMessage.textContent = msg;
         clearTimeout(toastTimeout);
-        toast.classList.remove('opacity-0', '-translate-y-16', 'sm:translate-y-16');
+        toast.classList.remove('opacity-0', 'translate-y-12');
         toast.classList.add('opacity-100', 'translate-y-0');
 
         toastTimeout = setTimeout(() => {
             toast.classList.remove('opacity-100', 'translate-y-0');
-            toast.classList.add('opacity-0', '-translate-y-16', 'sm:translate-y-16');
-        }, 2200);
+            toast.classList.add('opacity-0', 'translate-y-12');
+        }, 2000);
     }
 
     // --- Helper: Clock in WhatsApp Bubble ---
