@@ -91,6 +91,71 @@ def clean_val(v):
         return ''
     return s
 
+def load_ok_audit_status():
+    target_path = SCHEDULE_PATH if os.path.exists(SCHEDULE_PATH) else (SCHEDULE_FALLBACK if os.path.exists(SCHEDULE_FALLBACK) else None)
+    if not target_path:
+        return {}
+    try:
+        zf = zipfile.ZipFile(target_path, 'r')
+        shared_strings = []
+        if 'xl/sharedStrings.xml' in zf.namelist():
+            tree = ET.fromstring(zf.read('xl/sharedStrings.xml'))
+            for si in tree.findall('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}si'):
+                t = si.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t')
+                if t is not None and t.text:
+                    shared_strings.append(t.text)
+                else:
+                    text_parts = [r.text for r in si.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t') if r.text]
+                    shared_strings.append(''.join(text_parts))
+
+        wb_tree = ET.fromstring(zf.read('xl/workbook.xml'))
+        rels_tree = ET.fromstring(zf.read('xl/_rels/workbook.xml.rels'))
+        rel_map = {r.attrib['Id']: r.attrib['Target'] for r in rels_tree}
+
+        sheet_target = None
+        for sheet in wb_tree.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheet'):
+            name = sheet.attrib.get('name', '').strip()
+            if name.lower() == 'ok_audit status':
+                sheet_target = rel_map.get(sheet.attrib.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id'))
+                break
+
+        if not sheet_target:
+            zf.close()
+            return {}
+
+        sheet_path = 'xl/' + sheet_target.lstrip('/')
+        sheet_tree = ET.fromstring(zf.read(sheet_path))
+
+        ok_map = {}
+        for row in sheet_tree.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row'):
+            row_num = int(row.attrib.get('r', 0))
+            if row_num < 2:
+                continue
+            cols = {}
+            for c in row.findall('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}c'):
+                col = ''.join([ch for ch in c.attrib.get('r', '') if ch.isalpha()])
+                t = c.attrib.get('t', '')
+                v = c.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v')
+                val = None
+                if v is not None and v.text:
+                    val = shared_strings[int(v.text)] if t == 's' else v.text
+                cols[col] = val
+
+            st = str(cols.get('B', '') or '').strip()
+            job = str(cols.get('D', '') or '').strip().upper()
+            if job and st and st.lower() not in ('nan', 'none', '-', ''):
+                clean = job.replace('J', '')
+                ok_map[job] = st
+                if clean:
+                    ok_map[clean] = st
+
+        zf.close()
+        print(f'[SUCCESS] Loaded {len(ok_map)//2:,} audits from Ok_AUDIT Status sheet!')
+        return ok_map
+    except Exception as e:
+        print(f'[WARNING] Could not read Ok_AUDIT Status: {e}')
+        return {}
+
 def load_schedule_full():
     target_path = SCHEDULE_PATH if os.path.exists(SCHEDULE_PATH) else (SCHEDULE_FALLBACK if os.path.exists(SCHEDULE_FALLBACK) else None)
     if not target_path:
@@ -261,6 +326,10 @@ def load_schedule_full():
         return {}, {}
 
 schedule_dict, auditor_dict = load_schedule_full()
+ok_audit_dict = load_ok_audit_status()
+for k, v in ok_audit_dict.items():
+    if k not in nqa_dict:
+        nqa_dict[k] = v
 
 # 3. Write audit_data.js (containing AUDIT_DATA, AUDITOR_DATA, and SCHEDULE_DATA)
 audit_js_path = os.path.join(PROJECT_DIR, "audit_data.js")

@@ -162,6 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toast
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
+    const mainAuditDoneBadge = document.getElementById('main-audit-done-badge');
+    const modalAuditDoneWarn = document.getElementById('modal-audit-done-warn');
+    const btnCloseAuditWarn = document.getElementById('btn-close-audit-warn');
+    const warnModalJobNum = document.getElementById('warn-modal-job-num');
+    const warnModalStatusText = document.getElementById('warn-modal-status-text');
 
     // Update Initial Badge
     if (dumpCountBadge && jobsDataset.length > 0) {
@@ -342,6 +347,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Format Report Text ---
     let bulkGeneratedText = '';
+
+        // --- Helper: Check if Audit is Done / Passed / OK ---
+    function isAuditDoneStatus(status) {
+        if (!status) return false;
+        const s = String(status).trim().toLowerCase();
+        if (s === 'not audited' || s === '-' || s === '' || s === 'none' || s === 'nan') {
+            return false;
+        }
+        // Match Pass, PASS - D, OK, Audit Clear, Audit Done, Passed
+        return s.includes('pass') || s.includes('ok') || s.includes('audit clear') || s.includes('audit done') || s.includes('cleared');
+    }
+
+    function checkAndShowAuditDoneWarn(jobObj) {
+        if (!jobObj) return false;
+        const status = getJobAuditStatus(jobObj);
+        if (isAuditDoneStatus(status)) {
+            if (warnModalJobNum) warnModalJobNum.textContent = jobObj.job || '-';
+            if (warnModalStatusText) warnModalStatusText.textContent = status || 'Audit Passed / OK';
+            if (modalAuditDoneWarn) {
+                showModal(modalAuditDoneWarn);
+                if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+            }
+            return true;
+        }
+        return false;
+    }
 
     // --- Audit Status Lookup Engine ---
     // Priority 1: NQA Final Audit Reports (window.AUDIT_DATA / local cache)
@@ -823,6 +854,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeJobIndicator) {
             activeJobIndicator.textContent = `Job #${jobItem.job}`;
             activeJobIndicator.className = 'text-[10px] font-mono font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300 shadow-xs';
+        }
+
+        // Check if Audit is Done / Passed and Highlight Main Screen
+        const isPassed = isAuditDoneStatus(auditStatus);
+        if (mainAuditDoneBadge) {
+            if (isPassed) {
+                mainAuditDoneBadge.classList.remove('hidden');
+                mainAuditDoneBadge.innerHTML = `<i data-lucide="shield-alert" class="w-3 h-3"></i> AUDIT DONE (${auditStatus})`;
+                if (window.lucide) lucide.createIcons();
+            } else {
+                mainAuditDoneBadge.classList.add('hidden');
+            }
         }
 
         inputJobSearch.value = jobItem.job;
@@ -1419,6 +1462,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeJobIndicator.textContent = 'No Job Selected';
                 activeJobIndicator.className = 'text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200';
             }
+            if (mainAuditDoneBadge) {
+                mainAuditDoneBadge.classList.add('hidden');
+            }
             suggestionsBox.classList.add('hidden');
             updatePreview();
             showToast('Form reset!');
@@ -1543,6 +1589,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Copy Routine (Desktop & Mobile) ---
     async function copyReport() {
+        if (reportMode === 'single' && currentJob && checkAndShowAuditDoneWarn(currentJob)) {
+            return;
+        }
         const text = generateReportText();
         let copied = false;
 
@@ -1594,6 +1643,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Direct Share to WhatsApp ---
     function shareToWhatsApp() {
+        if (reportMode === 'single' && currentJob && checkAndShowAuditDoneWarn(currentJob)) {
+            return;
+        }
         const text = generateReportText();
         const encodedText = encodeURIComponent(text);
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -2396,7 +2448,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Outside Backdrop Click Dismissal
-    [modalAdminLogin, modalWorkerSelect, modalAdminDashboard, modalQr].forEach(modal => {
+        if (btnCloseAuditWarn && modalAuditDoneWarn) {
+        btnCloseAuditWarn.addEventListener('click', () => hideModal(modalAuditDoneWarn));
+    }
+
+    [modalAdminLogin, modalWorkerSelect, modalAdminDashboard, modalQr, modalAuditDoneWarn].forEach(modal => {
         if (!modal) return;
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
